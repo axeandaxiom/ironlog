@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>IronLog</title>
+<meta name="description" content="Starting Strength training log, health tracking, nutrition and movement testing. Offline, local, yours.">
+<meta name="theme-color" content="#0d0f12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IronLog">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">IronLog</span>
+  </div>
+  <div id="topbar-slot"></div>
+</header>
+
+<nav id="nav" aria-label="Main">
+  <button data-route="train"  class="nav-btn"><span class="nav-ico">▮</span><span>Train</span></button>
+  <button data-route="log"    class="nav-btn"><span class="nav-ico">≡</span><span>Log</span></button>
+  <button data-route="lab"    class="nav-btn"><span class="nav-ico">∠</span><span>Lab</span></button>
+  <button data-route="health" class="nav-btn"><span class="nav-ico">♥</span><span>Health</span></button>
+  <button data-route="food"   class="nav-btn"><span class="nav-ico">◍</span><span>Food</span></button>
+  <button data-route="more"   class="nav-btn"><span class="nav-ico">⋯</span><span>More</span></button>
+</nav>
+
+<main id="view" tabindex="-1"></main>
+
+<div id="rest-bar" hidden>
+  <div class="rest-progress"><div class="rest-fill"></div></div>
+  <div class="rest-body">
+    <span class="rest-label">Rest</span>
+    <span class="rest-clock">0:00</span>
+    <button class="rest-add" data-add="30">+30s</button>
+    <button class="rest-skip">Skip</button>
+  </div>
+</div>
+
+<noscript>
+  <p style="padding:2rem;color:#eee;background:#111">IronLog needs JavaScript. It runs entirely in your browser — there is no server to fall back to.</p>
+</noscript>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
