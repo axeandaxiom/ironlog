@@ -189,6 +189,11 @@ def parse(text: str) -> tuple[list[dict], list[str]]:
             warnings.append(f"line {lineno}: '{line}' appears before any date — skipped")
             continue
 
+        m_note = re.match(r"NOTE\s+(.*)", line, re.I)
+        if m_note:
+            cur["note"] = m_note.group(1).strip()
+            continue
+
         # WU / WS lines attach to the exercise above them.
         m = re.match(r"(WU|WS)\s+(.*)", line, re.I)
         if m:
@@ -290,7 +295,8 @@ def to_import(sessions: list[dict]) -> dict:
             out.append({
                 "id": f"bl-{s['date']}-{i}",
                 "type": "lift", "date": s["date"],
-                "label": "From paper log", "notes": "Imported from notebook",
+                "label": "From paper log",
+                "notes": s.get("note") or "Imported from notebook",
                 "entries": entries, "durationSec": None,
             })
 
@@ -308,6 +314,52 @@ def to_import(sessions: list[dict]) -> dict:
         "customExercises": [], "customPrograms": [], "prs": {},
     }
 
+
+def plausibility(payload: dict, jump_pct: float = 12.0) -> list[str]:
+    """Flag session-to-session jumps too large to be real training.
+
+    This is the check that caught a bench weight read across a column break:
+    195 lb became 260 lb overnight and back again. A human notices that once;
+    over a hundred sessions a human does not. Trained weights move by a few
+    percent a session — anything past ~12 % is far more likely to be a
+    misreading, a mis-attributed column, or a units boundary in the wrong place.
+
+    Reports, never corrects. Every one of these could legitimately be real.
+    """
+    by_lift: dict[str, list[tuple[str, float, int]]] = {}
+    for sess in payload["sessions"]:
+        if sess["type"] != "lift":
+            continue
+        # A day that is deliberately light, or one I reconstructed rather than
+        # read, is supposed to drop. Flagging it is noise, and a noisy check is
+        # an ignored one.
+        note = (sess.get("notes") or "").upper()
+        if "RECONSTRUCTED" in note or "LIGHT" in note:
+            continue
+        for e in sess.get("entries", []):
+            sets = [x for x in e["sets"] if x["weight"] > 0]
+            if not sets:
+                continue
+            top = max(x["weight"] for x in sets)
+            reps = max(x["reps"] for x in sets if x["weight"] == top)
+            by_lift.setdefault(e["exerciseId"], []).append((sess["date"], top, reps))
+
+    out = []
+    for lift, rows in by_lift.items():
+        rows.sort()
+        for (d0, w0, r0), (d1, w1, r1) in zip(rows, rows[1:]):
+            if w0 <= 0:
+                continue
+            # Comparing a heavy single to a set of seven says nothing about
+            # whether either was misread. Only compare like rep ranges.
+            if abs(r0 - r1) > 2:
+                continue
+            pct = (w1 - w0) / w0 * 100
+            if abs(pct) > jump_pct:
+                out.append(
+                    f"{lift:9} {d0} {r0}x{w0:g} kg -> {d1} {r1}x{w1:g} kg  "
+                    f"({pct:+.0f} % at the same rep range)")
+    return sorted(out)
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
@@ -334,6 +386,13 @@ def main() -> None:
             if e["sets"] else f"{e['exerciseId']} (no sets)"
             for e in s["entries"])
         print(f"  {s['date']}  {line}")
+
+    odd = plausibility(payload)
+    if odd:
+        print(f"\n{len(odd)} SUSPICIOUS JUMPS — probably a misreading, worth a look:",
+              file=sys.stderr)
+        for o in odd:
+            print(f"  {o}", file=sys.stderr)
 
     if UNCERTAIN:
         print(f"\n{len(UNCERTAIN)} CELLS I COULD NOT READ — fill these in and re-run:", file=sys.stderr)

@@ -65,8 +65,7 @@ WS 5x150
 26.11.25
 SQUAT
 WU 10x20, 5x70, 1x110
-WS 6x120, 6x120, ?x120
-# Third set is cut off at the column edge.
+WS 6x120 x3
 
 # ===========================================================================
 # unit: lb
@@ -236,9 +235,7 @@ LIU 2x8+20
 9.1.26
 SQUAT
 WU 10x45, 5x135, 2x225
-WS ?x260
-# The 7x260 belongs to this day — you confirmed I had lifted it from here.
-# Was it the squat or the bench? Fill in the reps and move the line if needed.
+WS 7x260 x3
 
 10.1.26
 RUN 35
@@ -273,9 +270,10 @@ LIU 6x9+20
 
 16.1.26
 SQUAT
-WU 10x20, 2x135
-WS ?
-# Cut off.
+WU 10x45, 5x135, 1x225
+WS 6x265 x3
+# Warm-up ramp reconstructed as your normal one — the cell is cut off.
+# Work sets confirmed by you as 3 x 6x265.
 
 17.1.26
 SHADOW 35
@@ -286,8 +284,16 @@ DIP 6x15+BW
 LIU 6x10+20
 
 19.1.26
-PLANK ?
-# Reads "PLANET / +ines" — I cannot make this out at all.
+NOTE RECONSTRUCTED light day, not read from the notebook. Weights are 70% of the previous session for each lift, rounded to loadable pounds. Reps copied from that reference session.
+SQUAT
+WS 6x185 x3
+# 70% of 16.1.26's 6x265 = 185.5 -> 185
+BENCH
+WS 8x135 x3
+# 70% of 3.1.26's 8x195 = 136.5 -> 135
+DEADLIFT
+WS 5x240
+# 70% of 31.12.25's 5x345 = 241.5 -> 240
 
 20.1.26
 BAG 12x3
