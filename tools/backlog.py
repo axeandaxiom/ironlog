@@ -122,19 +122,31 @@ def parse_sets(text: str, unit: str) -> list[dict]:
             repeat = int(m.group(1))
             chunk = chunk[: m.start()]
 
-        rp = re.fullmatch(r"\(?\s*(\d+(?:\s*\+\s*\d+)+)\s*\)?\s*[x×]\s*([\d.,]+)", chunk.strip())
+        # "F" is a failed rep — TV's notation, confirmed 29.07.26. It is part of
+        # the set as written but it is NOT a completed rep, so it never adds to
+        # the count. Recording it as a rep would inflate the volume and, worse,
+        # would let a missed attempt drive the progression upward.
+        rp = re.fullmatch(
+            r"\(?\s*((?:\d+|F)(?:\s*\+\s*(?:\d+|F))+)\s*\)?\s*[x×]\s*([\d.,]+)",
+            chunk.strip(), re.I)
         if rp:
-            clusters = [int(x) for x in re.split(r"\+", rp.group(1))]
+            raw = [x.strip() for x in re.split(r"\+", rp.group(1))]
+            done = [int(x) for x in raw if x.upper() != "F"]
+            fails = sum(1 for x in raw if x.upper() == "F")
             weight = parse_num(rp.group(2))
             if weight is None:
                 continue
             if unit == "lb":
                 weight = round(weight * LB_PER_KG, 2)
+            note = "rest-pause " + "+".join(str(c) for c in done) if len(done) > 1 else ""
+            if fails:
+                note = (note + ", " if note else "") + (
+                    f"{fails} failed reps" if fails > 1 else "failed rep")
             for _ in range(repeat):
                 out.append({
                     "weight": weight,
-                    "reps": sum(clusters),
-                    "note": f"rest-pause {'+'.join(str(c) for c in clusters)}",
+                    "reps": sum(done),
+                    "note": note,
                 })
             continue
 

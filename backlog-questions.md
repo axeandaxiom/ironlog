@@ -10,8 +10,10 @@ Answer by number. You don't have to do them in order or all at once.
 
 ## Notation — answer once, applies everywhere
 
-**Q1.** `3+1+F ×270` (24.01.26 squat, third set). Is `F` a failed rep? So:
-three, then one, then one you didn't get?
+**Q1. ANSWERED 29.07.26 — "F is fail."** Handled in `tools/backlog.py`: the
+failure is recorded as a note but never counted as a rep, so a missed attempt
+cannot inflate volume or drive the progression upward. Applies to every `F` in
+the remaining photos.
 
 **Q2.** Confirmed already, restating so it's in one place: `(2+3)×70` and
 `(6+2)×195` are rest-pause sets, `BURP` is burpees, `+BW` is bodyweight only.
@@ -75,21 +77,16 @@ continues onto the next one. I'll pick it up in batch 3 rather than guess.
 **Q10 is now answered by the page itself** — 08.02.26 completes as squat
 `5×295`×3, press `5×145`×3, deadlift `5×360`. No action needed.
 
-**Q11.** 08.02.26 press work sets. The first reads `5×195`, the next two read
-`5×145`. 195 is your bench weight, not your press (you press 135–160), so I
-recorded all three as `5×145`. Confirm, or give me the right numbers.
+**Q11. ANSWERED 29.07.26** — all three sets are `5×145`. Recorded.
 
-**Q12.** 11.02.26 squat first work set could be `5×200` or `5×300`. The other
-two are clearly `5×300` and you were at `5×295` three days earlier, so I took
-`5×300`. Confirm.
+**Q12. ANSWERED 29.07.26** — `5×300`×3. Recorded.
 
 **Q13.** Somewhere around 10–14.02.26 the Liu raise weight changes from `20` to
 `22.5`, and there is a chin/dip/Liu day I cannot yet pin to a date because the
 column runs off the page. Left out entirely rather than dated wrongly — I'll
 resolve it against the next photo.
 
-**Q14.** 13.02.26 bodyweight reads **179**, up from 172 on 03.02. Plausible over
-ten days, but it's the biggest jump in the file — confirm it isn't a 170.
+**Q14. ANSWERED 29.07.26** — 179 is right, a real 7 lb gain. Recorded.
 
 ### Still on this page, not yet transcribed
 14.02.26 onward, plus the undated chin/dip block in Q13. Batch 4 picks these up.
