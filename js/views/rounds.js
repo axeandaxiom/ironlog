@@ -2,12 +2,15 @@
 
 import { el, fmtClock, num, toast, buzz, numInput, parseNum } from '../util.js';
 import * as store from '../store.js';
-import { RoundTimer, DEFAULT_BOXING, bell, warnBeep, tick, primeAudio, audioState, stopAudio } from '../timer.js';
+import { RoundTimer, DEFAULT_BOXING, bell, warnBeep, tick, primeAudio, audioState, stopAudio,
+         setAudioMode } from '../timer.js';
 import { keepAwake } from '../sensors.js';
 import { sheet } from '../app.js';
 
 export function boxingConfig(db, overrides = {}) {
-  return { ...DEFAULT_BOXING, ...(db.settings.boxing || {}), ...overrides };
+  const cfg = { ...DEFAULT_BOXING, ...(db.settings.boxing || {}), ...overrides };
+  setAudioMode(cfg.audioMode);
+  return cfg;
 }
 
 /**
@@ -182,6 +185,38 @@ export function openRoundSettings(ctx, after) {
       return fld;
     };
 
+    let audioMode = cfg.audioMode === 'exclusive' ? 'exclusive' : 'mix';
+    const audioHelp = el('div', { class: 'li-sub' });
+    const audioModeField = () => {
+      const wrap = el('div', { class: 'field' });
+      const chips = el('div', { class: 'btn-row' });
+      const opts = [
+        ['mix', 'Play over other apps'],
+        ['exclusive', 'Take over the sound'],
+      ];
+      const say = () => {
+        audioHelp.textContent = audioMode === 'mix'
+          ? 'A podcast or music keeps playing and ducks under the bell. The ringer '
+            + 'switch on the side of the phone can mute the bell in this mode.'
+          : 'The bell ignores the ringer switch, but iOS hands the sound to one app '
+            + 'at a time, so whatever else is playing will stop.';
+      };
+      const btns = opts.map(([v, label]) => {
+        const b = el('button', { class: 'chip', 'aria-pressed': String(audioMode === v) }, label);
+        b.addEventListener('click', () => {
+          audioMode = v;
+          btns.forEach((o, i) => o.setAttribute('aria-pressed', String(opts[i][0] === v)));
+          setAudioMode(v);        // rebuilds the context in the new category
+          say();
+        });
+        return b;
+      });
+      chips.append(...btns);
+      say();
+      wrap.append(chips, audioHelp);
+      return wrap;
+    };
+
     // A test that says nothing is indistinguishable from a test that failed,
     // so both buttons report what the audio device actually did.
     const diag = el('div', { class: 'li-sub', style: { marginTop: '6px' } });
@@ -208,6 +243,8 @@ export function openRoundSettings(ctx, after) {
         'Three sharper beeps right before the round ends.'),
       field('restWarnSec', 'Seconds out (s before the rest ends)',
         'Warns you to get back on the bag before the bell.'),
+      el('h3', {}, 'Sound'),
+      audioModeField(),
       toggleRow('Sound', cfg.sound, (v) => { cfg.sound = v; }),
       toggleRow('Vibrate', cfg.vibrate, (v) => { cfg.vibrate = v; }),
       el('div', { class: 'note' },
@@ -218,7 +255,7 @@ export function openRoundSettings(ctx, after) {
       diag,
       audioNote(),
       el('button', { class: 'btn-primary btn-block', style: { marginTop: '12px' }, onclick: () => {
-        const next = { ...cfg, inRoundWarnMode: warnMode };
+        const next = { ...cfg, inRoundWarnMode: warnMode, audioMode };
         for (const [k, inp] of Object.entries(f)) {
           const v = Math.round(parseNum(inp));
           if (!Number.isNaN(v) && v >= 0) next[k] = v;

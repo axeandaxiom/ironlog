@@ -275,16 +275,54 @@ let keepAlive = null;
  *     long idle gap, so a silent looping source holds the session open; without
  *     it the bell at the end of round one plays and nothing after it does.
  */
+// 'mix' lets other apps keep playing and ducks them for the bell; 'exclusive'
+// beats the ringer switch but takes the audio session away from them. Changing
+// it rebuilds the context, because the category is fixed at construction.
+let audioMode = 'mix';
+
+export function setAudioMode(mode) {
+  const next = mode === 'exclusive' ? 'exclusive' : 'mix';
+  if (next === audioMode) return;
+  audioMode = next;
+  try { keepAlive?.stop(); } catch { /* already stopped */ }
+  keepAlive = null;
+  const old = ctx;
+  ctx = null;                      // primeAudio builds a fresh one on the next tap
+  try { old?.close(); } catch { /* nothing to close */ }
+}
+
+export function getAudioMode() { return audioMode; }
+
 export async function primeAudio() {
   try {
     // Order matters: the audio session category is fixed when the context is
-    // constructed, so asking for "playback" afterwards leaves an already-built
-    // context in the ambient category that the ringer switch mutes.
+    // constructed, so asking for a category afterwards leaves an already-built
+    // context in the one it was born with.
+    //
+    // The two categories are a genuine either/or on iOS and you have to pick:
+    //   'transient' ducks other apps — a podcast keeps playing and the bell
+    //               cuts over the top of it — but the ringer switch can mute it.
+    //   'playback'  ignores the ringer switch but takes the session
+    //               exclusively, which is what stops the podcast dead.
     try {
-      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+      if (navigator.audioSession) {
+        navigator.audioSession.type = audioMode === 'exclusive' ? 'playback' : 'transient';
+      }
     } catch { /* not supported; the ringer switch will win */ }
     ctx ||= new (window.AudioContext || window.webkitAudioContext)();
     if (ctx.state === 'suspended') await ctx.resume();
+    // A phone call, a podcast starting, or Siri suspends the context out from
+    // under us and every bell after that point is silent. Resume the moment it
+    // happens rather than waiting for the next user tap, which may never come
+    // in the middle of a twelve-round session.
+    if (!ctx._ilWatched) {
+      ctx._ilWatched = true;
+      ctx.addEventListener('statechange', () => {
+        if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
+          ctx.resume().catch(() => {});
+        }
+      });
+    }
     startKeepAlive();
     return ctx.state === 'running';
   } catch {
