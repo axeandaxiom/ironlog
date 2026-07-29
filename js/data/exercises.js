@@ -251,6 +251,7 @@ export const ASSISTANCE = [
   { id: 'ca-hspu', name: 'Handstand Push-up', equip: 'bodyweight', target: 'shoulders', sets: '3 × 3–8', note: 'Against a wall. Not a substitute for pressing a loaded bar.' },
   { id: 'ca-plank', name: 'Plank', equip: 'bodyweight', target: 'trunk', sets: '3 × 45–60 s', note: 'If you can hold two minutes, add load rather than time.' },
   { id: 'ca-hollow', name: 'Hollow Body Hold', equip: 'bodyweight', target: 'trunk', sets: '3 × 30–45 s', note: 'Lower back flat on the floor the whole time.' },
+  { id: 'burpees', name: 'Burpees', equip: 'bodyweight', target: 'full body / conditioning', sets: '3 × 40', note: 'Counted in total reps rather than load. Squat thrust to a push-up, back up, jump. Conditioning that needs no equipment and no space — which is exactly why it survives travel.' },
   { id: 'ca-neck', name: 'Neck Harness / Isometrics', equip: 'bodyweight', target: 'neck', sets: '3 × 15–20', note: 'Relevant if you box. Build it slowly.' },
 ];
 

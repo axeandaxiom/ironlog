@@ -1,0 +1,301 @@
+# IronLog backlog — transcription of the paper notebook
+#
+# Convention: every pair is REPS x WEIGHT, as written in the notebook.
+# "CHIN 3x6+22.5" is sets x reps + added weight.
+# A "?" means I could not read that cell. Replace it and re-run; the tool
+# drops any line containing one, so nothing uncertain becomes data.
+#
+# UNITS — please confirm. Your bodyweight column is what convinced me:
+#   Nov 2025      kg   (14.11.25 reads "77")
+#   Dec 25–Feb 26 lb   (bodyweight 168–174, squats 245–315)
+#   Mar 26 on     kg   (bodyweight 76.7–80.7, squats 110–135)
+# So you appear to have gone kg -> lb -> kg, not lb -> kg once.
+
+# ===========================================================================
+# unit: kg
+# ===========================================================================
+
+# --- opening entry, continued from the previous page -----------------------
+12.11.25
+ROM DEAD
+WU 5x65, 2x115
+WS (1+1)x155
+
+13.11.25
+SHADOW 30
+
+14.11.25
+CHIN 6x8+16.25
+DIP 6x8+16.25
+LIU 6x8+10
+
+15.11.25
+SQUAT
+WU 10x20, 5x70
+WS 7x110 x3
+BENCH
+WU 10x20, 5x50, 2x70
+WS 7x85 x3
+DEADLIFT
+WU 5x85, 2x110
+WS 7x140
+
+16.11.25
+BAG 12x3
+
+17.11.25
+CHIN 1x9+16.25
+DIP 1x9+16.25
+LIU 1x9+10
+CHIN 5x8+16.25
+DIP 5x8+16.25
+LIU 5x8+10
+
+18.11.25
+SQUAT
+WU 10x25, 3x70, 1x110
+WS 5x120 x3
+PRESS
+WU 10x20, 3x50
+WS (2+3)x70, 5x70, 5x70
+ROM DEAD
+WU 10x20, 3x110, 1x140
+WS 5x150
+
+26.11.25
+SQUAT
+WU 10x20, 5x70, 1x110
+WS 6x120, 6x120, ?x120
+# Third set is cut off at the column edge.
+
+# ===========================================================================
+# unit: lb
+# From here the numbers and the bodyweight column both read as pounds.
+# ===========================================================================
+
+16.12.25
+SQUAT
+WU 10x45, 5x135, 1x225
+WS 5x245 x3
+BENCH
+WU 10x45, 5x135, 2x175
+WS 5x195 x3
+DEADLIFT
+WU 5x135, 2x175, 1x315
+WS 1x375
+
+17.12.25
+BURPEES 3x40
+
+18.12.25
+CHIN 9x7+35
+DIP 1x7+35
+LIU 1x7+20
+CHIN 5x6+35
+DIP 5x6+35
+LIU 5x6+20
+# First chin reads "9+7x35" — nine sets of seven seems a lot. Please confirm.
+
+19.12.25
+SQUAT
+WU 10x40, 5x135, 1x225
+WS 5x250 x3
+PRESS
+WU 10x45, 3x95
+WS 5x150 x3
+ROM DEAD
+WU 5x180, 2x240
+WS 5x330
+
+20.12.25
+BAG 12x3
+# The cell reads only a dash; I am assuming a rest day was crossed through.
+# Please correct or delete this line.
+
+21.12.25
+CHIN 6x7+35
+DIP 6x7+35
+LIU 6x7+20
+
+22.12.25
+SQUAT
+WU 10x45, 5x135, 1x225
+WS 5x250 x3
+PRESS
+WU 10x45, 1x135
+WS 5x155 x3
+ROM DEAD
+WU 5x155, 2x225, 1x315
+WS 5x355
+
+23.12.25
+BAG 12x3
+# Same as 20.12 — the cell holds only a dash.
+
+24.12.25
+CHIN 1x8+35
+DIP 1x8+35
+LIU 1x8+20
+
+25.12.25
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 5x255 x3
+PRESS
+WU 10x20, 3x95
+WS 6x150, 5x150, 5x150
+ROM DEAD
+WU 5x150, 2x240
+WS 5x340
+
+26.12.25
+BURPEES 180
+
+27.12.25
+CHIN 3x8+35
+DIP 3x8+35
+LIU 3x8+20
+CHIN 3x7+35
+DIP 3x7+35
+LIU 3x7+20
+
+28.12.25
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 6x255 x3
+BENCH
+WU 10x45, 5x135, 1x185
+WS 7x195 x3
+
+29.12.25
+BURPEES 190
+
+30.12.25
+CHIN 5x8+35
+DIP 5x8+35
+LIU 5x8+20
+CHIN 1x7+35
+DIP 1x7+35
+LIU 1x7+20
+
+31.12.25
+# The 7x195 I had put here was the 28.12 bench, read across a column break.
+# No squat work set for this day is legible; the warm-up ramp reads 10x45, 3x135.
+DEADLIFT
+WU 5x135, 2x225, 1x315
+WS 5x345
+
+1.1.26
+BURPEES 200
+
+2.1.26
+CHIN 6x8+35
+DIP 6x8+35
+LIU 6x8+20
+
+3.1.26
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 8x255 x3
+BENCH
+WU 10x45, 5x135, 1x185
+WS 8x195, (6+2)x195, (5+2)x195
+DEAD
+WU 5x135, 2x225, 4x315
+WS 1x360, 5x335
+# "4x315" as a warm-up single seems off; and two work sets of different
+# weights. Please check both.
+
+4.1.26
+RUN 30
+
+5.1.26
+CHIN 2x9+35
+DIP 2x9+35
+LIU 2x9+20
+CHIN 4x8+35
+DIP 4x8+35
+LIU 4x8+20
+
+6.1.26
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 6x260 x3
+PRESS
+WU 10x45, 2x135
+WS 6x155
+
+8.1.26
+CHIN 4x9+35
+DIP 4x9+35
+LIU 4x9+20
+CHIN 2x8+35
+DIP 2x8+35
+LIU 2x8+20
+
+9.1.26
+SQUAT
+WU 10x45, 5x135, 2x225
+WS ?x260
+# The 7x260 belongs to this day — you confirmed I had lifted it from here.
+# Was it the squat or the bench? Fill in the reps and move the line if needed.
+
+10.1.26
+RUN 35
+
+11.1.26
+CHIN 8x9+35
+DIP 8x9+35
+LIU 8x9+20
+
+13.1.26
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 5x265 x3
+PRESS
+WU 10x45, 2x135
+WS 3x160 x3
+ROM DEAD
+WU 5x160, 3x225, 4x315
+WS 4x315, 2x315, 2x315
+# The "4x315" warm-up and the descending work sets both need checking.
+
+14.1.26
+BAG 35
+
+15.1.26
+CHIN 1x15+BW
+CHIN 1x12+BW
+CHIN 4x10+BW
+DIP 6x15+BW
+LIU 6x9+20
+# "BW" means bodyweight only. The tool records these at zero added weight.
+
+16.1.26
+SQUAT
+WU 10x20, 2x135
+WS ?
+# Cut off.
+
+17.1.26
+SHADOW 35
+
+18.1.26
+CHIN 6x15+BW
+DIP 6x15+BW
+LIU 6x10+20
+
+19.1.26
+PLANK ?
+# Reads "PLANET / +ines" — I cannot make this out at all.
+
+20.1.26
+BAG 12x3
+
+21.1.26
+SQUAT
+WU 10x45, 5x135, 1x225
+WS 7x265 x3
+PRESS
+WU 10x45, 1x135
+WS 6x135

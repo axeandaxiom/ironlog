@@ -61,7 +61,8 @@ EXERCISES = {
     "LIU": "liu-raise",
     "BB ROW": "db-row",
     "BBROW": "db-row",
-    "BURP": "burpees",          # not in the catalogue; flagged, not invented
+    "BURP": "burpees",
+    "BURPEES": "burpees",
     "BAG": "box-bag-int",
     "SHADOW": "box-shadow",
     "RUN": "run-easy",
@@ -71,6 +72,9 @@ EXERCISES = {
 CONDITIONING = {"box-bag-int", "box-shadow", "run-easy"}
 BODYWEIGHT_LIFTS = {"chinup", "dip"}
 UNKNOWN: set[str] = set()
+
+
+UNCERTAIN: list[str] = []
 
 
 def parse_num(tok: str) -> float | None:
@@ -96,7 +100,16 @@ def parse_date(tok: str) -> str | None:
 
 
 def parse_sets(text: str, unit: str) -> list[dict]:
-    """'5x132.5, 5x132.5' or '5x132.5 x3' -> a list of {weight, reps}."""
+    """'5x132.5, 5x132.5' or '5x132.5 x3' -> a list of {weight, reps}.
+
+    Rest-pause clusters — "(2+3)x70" or "1+1x155" — are one work set taken in
+    two goes, not two sets. Recorded as a single set carrying the total reps,
+    with a note preserving the clusters, so the volume is right and the
+    structure is not quietly lost.
+
+    The distinction from "3x6+22.5" (sets x reps + added weight) is the order:
+    a "+" BEFORE the "x" is rest-pause; an "x" before the "+" is sets/reps/weight.
+    """
     out = []
     for chunk in re.split(r"[,;]", text):
         chunk = chunk.strip()
@@ -108,6 +121,23 @@ def parse_sets(text: str, unit: str) -> list[dict]:
         if m:
             repeat = int(m.group(1))
             chunk = chunk[: m.start()]
+
+        rp = re.fullmatch(r"\(?\s*(\d+(?:\s*\+\s*\d+)+)\s*\)?\s*[x×]\s*([\d.,]+)", chunk.strip())
+        if rp:
+            clusters = [int(x) for x in re.split(r"\+", rp.group(1))]
+            weight = parse_num(rp.group(2))
+            if weight is None:
+                continue
+            if unit == "lb":
+                weight = round(weight * LB_PER_KG, 2)
+            for _ in range(repeat):
+                out.append({
+                    "weight": weight,
+                    "reps": sum(clusters),
+                    "note": f"rest-pause {'+'.join(str(c) for c in clusters)}",
+                })
+            continue
+
         parts = re.split(r"[x×]", chunk)
         if len(parts) < 2:
             continue
@@ -138,6 +168,13 @@ def parse(text: str) -> tuple[list[dict], list[str]]:
             m = re.match(r"#\s*unit\s*:\s*(kg|lb)", line, re.I)
             if m:
                 unit = m.group(1).lower()
+            continue
+
+        # A "?" anywhere on a line means I could not read that cell. The line is
+        # reported and dropped — an uncertain number must never become data,
+        # because once it is in the log it looks exactly like a certain one.
+        if "?" in line:
+            UNCERTAIN.append(f"line {lineno}  [{cur['date'] if cur else 'no date'}]  {line}")
             continue
 
         # A bare date starts a new session.
@@ -190,15 +227,29 @@ def parse(text: str) -> tuple[list[dict], list[str]]:
         entry = {"exerciseId": ex, "sets": [], "warmupSets": []}
         cur["entries"].append(entry)
 
+        if ex == "burpees" and re.fullmatch(r"\d+", rest.strip()):
+            entry["sets"] = [{"weight": 0, "reps": int(rest.strip())}]
+            continue
+
         if rest:
             # Three numbers means sets x reps x weight — "CHIN 3x6+22.5" is
             # three sets of six at +22.5, and "LIU 3x6+7.5" is the same shape.
             # Two numbers means reps x weight, as in the WU/WS ramps.
-            m3 = re.match(r"(\d+)\s*[x×]\s*(\d+)\s*[+x×]\s*([\d.,]+)\s*$", rest)
+            # "+BW" is bodyweight only — a real, meaningful zero on a chin
+            # or a dip, not a missing number.
+            if ex == "burpees":
+                m4 = re.fullmatch(r"(\d+)\s*[x×]\s*(\d+)", rest.strip())
+                if m4:
+                    entry["sets"] = [{"weight": 0, "reps": int(m4.group(2))}
+                                     for _ in range(int(m4.group(1)))]
+                    continue
+
+            m3 = re.match(r"(\d+)\s*[x×]\s*(\d+)\s*[+x×]\s*([\d.,]+|BW)\s*$", rest, re.I)
             if m3:
                 nsets, reps = int(m3.group(1)), int(m3.group(2))
-                added = parse_num(m3.group(3)) or 0
-                if unit == "lb":
+                raw = m3.group(3)
+                added = 0.0 if raw.upper() == "BW" else (parse_num(raw) or 0)
+                if unit == "lb" and added:
                     added = round(added * LB_PER_KG, 2)
                 entry["sets"] = [{"weight": added, "reps": reps} for _ in range(nsets)]
             else:
@@ -283,6 +334,11 @@ def main() -> None:
             if e["sets"] else f"{e['exerciseId']} (no sets)"
             for e in s["entries"])
         print(f"  {s['date']}  {line}")
+
+    if UNCERTAIN:
+        print(f"\n{len(UNCERTAIN)} CELLS I COULD NOT READ — fill these in and re-run:", file=sys.stderr)
+        for u in UNCERTAIN:
+            print(f"  {u}", file=sys.stderr)
 
     if warnings:
         print("\nCHECK THESE — nothing was invented, these lines were skipped:", file=sys.stderr)
