@@ -1,7 +1,7 @@
 // Service worker: cache-first for the app shell so the gym's dead spot in the
 // basement is a non-event. Bump CACHE when any file below changes.
 
-const CACHE = 'ironlog-v8';
+const CACHE = 'ironlog-v9';
 
 const ASSETS = [
   './',
@@ -10,6 +10,7 @@ const ASSETS = [
   './css/app.css',
   './js/app.js',
   './js/util.js',
+  './js/version.js',
   './js/store.js',
   './js/programs.js',
   './js/nutrition.js',

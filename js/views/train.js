@@ -584,6 +584,9 @@ function setRow(entry, set, i, db, ctx, updateCounter, { warmup = false } = {}) 
     set.weight = Number.isNaN(w) ? 0 : fromDisplayWeight(w, unit);
     const r = parseNum(rInput);
     set.reps = Number.isNaN(r) ? 0 : Math.round(r);
+    // Records that a human touched this row, as opposed to it being pre-filled
+    // from the prescription or the warm-up ladder.
+    set.edited = true;
     store.save();
     if (row.classList.contains('logged')) refreshPlateLine(row, set, db);
   };
@@ -890,9 +893,38 @@ async function finishSession(ctx) {
   const s = db.activeSession;
   if (!s) return;
 
+  // Sets you filled in but never ticked used to be thrown away without a word.
+  // The numbers are sitting right there and you put them there deliberately —
+  // discarding them silently is the worst thing this screen could do.
+  // Work sets are the session, so an unticked one with reps against it is
+  // always worth asking about. Warm-ups are pre-filled from the ladder and
+  // routinely left unticked, so they only count if you actually edited one —
+  // otherwise this would fire on every single session and you would learn to
+  // dismiss it, which defeats the point.
+  const pending = [];
+  for (const e of s.entries) {
+    if (e.conditioning) continue;
+    for (const set of e.sets || []) {
+      if (!set.done && set.reps > 0) pending.push(set);
+    }
+    for (const set of e.warmupSets || []) {
+      if (!set.done && set.reps > 0 && set.edited) pending.push(set);
+    }
+  }
+
+  if (pending.length) {
+    const choice = await askPending(pending.length);
+    if (choice === 'cancel') return;
+    if (choice === 'log') {
+      pending.forEach((set) => { set.done = true; set.ts = Date.now(); });
+      store.save();
+    }
+  }
+
   const done = countDone(s) + countWarm(s) + countCond(s);
   if (done === 0) {
-    const ok = await confirmSheet('Nothing logged', 'No sets were marked complete. Discard this session?', 'Discard');
+    const ok = await confirmSheet('Nothing logged',
+      'No sets have any reps against them, so there is nothing to record. Discard this session?', 'Discard');
     if (ok) { store.update((d) => { d.activeSession = null; }); stopRest(); ctx.refresh(); }
     return;
   }
@@ -940,6 +972,33 @@ async function finishSession(ctx) {
 
   stopRest();
   showSummary(ctx, s, changes, db.settings.units, condRecords);
+}
+
+/**
+ * Three-way question for sets that were filled in but never ticked.
+ * Deliberately not a yes/no: "cancel" has to be available, because the honest
+ * answer is often "I forgot to tick them, let me go back and look".
+ */
+function askPending(count) {
+  return new Promise((resolve) => {
+    let answered = false;
+    sheet('Some sets were not ticked', (body, close) => {
+      body.append(
+        el('p', { class: 'sub' },
+          `${count} set${count === 1 ? ' has' : 's have'} reps filled in but no tick. `
+          + 'Did you do them?'),
+        el('div', { class: 'stack' },
+          el('button', { class: 'btn-primary', onclick: () => { answered = true; close(); resolve('log'); } },
+            `Log ${count === 1 ? 'it' : 'them all'}`),
+          el('button', { onclick: () => { answered = true; close(); resolve('cancel'); } },
+            'Go back and check'),
+          el('button', { class: 'btn-danger', onclick: () => { answered = true; close(); resolve('skip'); } },
+            `Leave ${count === 1 ? 'it' : 'them'} out`)),
+        el('div', { class: 'note' },
+          'Anything you log here counts towards the progression and sets the weight offered next session.')
+      );
+    }, { onClose: () => { if (!answered) resolve('cancel'); } });
+  });
 }
 
 function showSummary(ctx, s, changes, unit, condRecords = []) {

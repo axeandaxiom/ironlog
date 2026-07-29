@@ -14,6 +14,7 @@ import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, findExercise,
          registerCustomExercises, normaliseCustom, allMovements } from './js/data/exercises.js';
 import * as store from './js/store.js';
 import { RoundTimer, DEFAULT_BOXING } from './js/timer.js';
+import { BUILD, BUILT } from './js/version.js';
 import { supported as mediaSupported, put as mediaPut, get as mediaGet,
          remove as mediaRemove, prune as mediaPrune, fmtBytes,
          hasAttachments } from './js/media.js';
@@ -1067,6 +1068,68 @@ group('Every exercise remembers its own weight');
      'reps still come from the programme, not from what you happened to do');
 
   registerCustomPrograms([]);
+}
+
+group('Nothing you typed is thrown away');
+{
+  // The rule: a set with reps against it is data the user entered on purpose.
+  // Finishing must never discard it without asking.
+  const pendingIn = (session) => {
+    const out = [];
+    for (const e of session.entries) {
+      if (e.conditioning) continue;
+      for (const set of e.sets || []) if (!set.done && set.reps > 0) out.push(set);
+      for (const set of e.warmupSets || []) if (!set.done && set.reps > 0 && set.edited) out.push(set);
+    }
+    return out;
+  };
+
+  const session = {
+    entries: [
+      { exerciseId: 'squat',
+        warmupSets: [
+          { weight: 20, reps: 5, done: true },
+          { weight: 60, reps: 3, done: false },                 // pre-filled, untouched
+          { weight: 80, reps: 2, done: false, edited: true },   // you changed this one
+        ],
+        sets: [
+          { weight: 100, reps: 5, done: true },
+          { weight: 100, reps: 5, done: false },   // did it, forgot to tick
+          { weight: 100, reps: 0, done: false },   // genuinely never done
+        ] },
+      { exerciseId: 'box-bag-int', conditioning: true, done: true, sets: [] },
+    ],
+  };
+
+  const pending = pendingIn(session);
+  ok(pending.length === 2, 'an unticked work set and an edited warm-up are both caught',
+     String(pending.length));
+  ok(!pending.some((x) => x.weight === 60),
+     'but a pre-filled warm-up you never touched is not nagged about');
+  ok(!pending.some((x) => x.reps === 0), 'a set with no reps is not treated as data');
+  ok(!pending.some((x) => x.done), 'and an already-ticked set is left alone');
+
+  // Choosing to log them makes them count towards the progression.
+  pending.forEach((x) => { x.done = true; });
+  const db = freshDB();
+  applySession(db, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'squat', prescribedSets: 2, prescribedReps: 5,
+      sets: session.entries[0].sets.filter((x) => x.done && x.reps > 0) }],
+  });
+  ok(db.program.working.squat === 102.5,
+     'and once logged they drive the weight offered next time',
+     String(db.program.working.squat));
+
+  // A conditioning slot has no sets and must not be dragged into this.
+  ok(pendingIn({ entries: [{ conditioning: true, done: false, sets: [] }] }).length === 0,
+     'a conditioning slot is never counted as an unticked set');
+}
+
+group('Build version');
+{
+  ok(/^v\d+$/.test(BUILD), `build is tagged (${BUILD})`);
+  ok(typeof BUILT === 'string' && BUILT.length >= 8, 'and dated');
 }
 
 group('The four-day preset');

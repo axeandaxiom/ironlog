@@ -241,9 +241,73 @@ store.onChange((db) => {
   if (db.settings.keepAwake) keepAwake(!!db.activeSession);
 });
 
+// ---------------------------------------------------------------------------
+// Updating
+//
+// An installed PWA has no pull-to-refresh and never navigates — it is a single
+// page that stays open for weeks. Left alone it would keep running whatever
+// build it was installed with, so the app has to check for itself and say so.
+// ---------------------------------------------------------------------------
+
+let swReg = null;
+let updateReady = false;
+
+export function updateState() {
+  return { ready: updateReady, registered: !!swReg };
+}
+
+/** Ask the browser to re-fetch the worker. Returns true if a new one is waiting. */
+export async function checkForUpdate() {
+  if (!swReg) return false;
+  try {
+    await swReg.update();
+  } catch { /* offline — nothing to check against */ }
+  return !!(swReg.installing || swReg.waiting) || updateReady;
+}
+
+export function applyUpdate() {
+  // The worker calls skipWaiting on install, so a plain reload is enough to
+  // pick up the new one.
+  location.reload();
+}
+
+function showUpdateBanner() {
+  if ($('#update-banner')) return;
+  const bar = el('div', { id: 'update-banner' },
+    el('span', {}, 'A new version is ready.'),
+    el('button', { class: 'btn-sm', onclick: applyUpdate }, 'Reload'),
+    el('button', { class: 'btn-sm btn-ghost', 'aria-label': 'Dismiss',
+      onclick: () => bar.remove() }, '✕'));
+  document.body.append(bar);
+}
+
 if ('serviceWorker' in navigator && window.isSecureContext) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW registration failed', err));
+  window.addEventListener('load', async () => {
+    try {
+      swReg = await navigator.serviceWorker.register('sw.js');
+
+      swReg.addEventListener('updatefound', () => {
+        const fresh = swReg.installing;
+        if (!fresh) return;
+        fresh.addEventListener('statechange', () => {
+          // A worker reaching "installed" while one is already controlling the
+          // page means there is genuinely a newer build sitting there.
+          if (fresh.state === 'installed' && navigator.serviceWorker.controller) {
+            updateReady = true;
+            showUpdateBanner();
+          }
+        });
+      });
+
+      // Check on launch, and again whenever the app comes back to the front —
+      // which for a home-screen app is the only moment it reliably gets.
+      swReg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') swReg.update().catch(() => {});
+      });
+    } catch (err) {
+      console.warn('SW registration failed', err);
+    }
   });
 }
 

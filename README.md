@@ -39,7 +39,7 @@ certificate, which removes the warning and the LAN requirement entirely.
 open http://localhost:8765/tests.html
 ```
 
-279 assertions covering the progression engine, plate and warm-up maths,
+287 assertions covering the progression engine, plate and warm-up maths,
 warm-up isolation, carry-forward ownership rules, custom exercises and
 programmes, the round timer (including background catch-up), attachment
 storage, nutrition calculations,
@@ -96,6 +96,12 @@ carried by its progression. An accessory has no progression to carry it, so the
 log does: whatever you last used comes back next time, per movement. A weight
 written into a programme only seeds a movement the first time — after that your
 own history governs it. Reps stay the programme's business.
+
+**Nothing you typed is discarded.** A set with reps against it is data you
+entered deliberately. Finishing a session with work sets filled in but not
+ticked asks whether you did them, rather than silently dropping them — which is
+how a whole session used to vanish. Pre-filled warm-ups you never touched are
+not nagged about; only ones you actually edited.
 
 **A free session counts.** Work logged off-programme still moves your weights
 on and still starts from last time — it is real work, and the log is the source
@@ -326,6 +332,12 @@ No framework, no build step, no dependencies. Edit a file, reload the page.
   training log is the worse trade. Offline still works fully: everything is
   precached on install.
 - **Bump `CACHE` in `sw.js`** when you add or remove a file from `ASSETS`.
+- **An installed PWA has no pull-to-refresh and never navigates.** It is one
+  page that stays open for weeks, so left alone it runs whatever build it was
+  installed with forever. The app therefore calls `registration.update()` on
+  launch and on every return to the foreground, shows a banner when a new build
+  is ready, and displays its build number under More → This device. Bump
+  `BUILD` in `js/version.js` and `CACHE` in `sw.js` together, always.
 - **Never drive a timer with `requestAnimationFrame`.** rAF delivers exactly
   zero frames while the page is hidden — screen off, app switched away, phone
   in a pocket — so a rAF-driven clock stops dead mid-round and its alerts never

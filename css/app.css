@@ -422,3 +422,17 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5
 [data-phase="done"] .round-clock, [data-phase="done"] .round-phase { color: var(--accent); }
 
 @media (max-width: 380px) { .round-clock { font-size: 62px; } }
+
+/* ---------------------------------------------------------------- update */
+#update-banner {
+  position: fixed; left: 12px; right: 12px; z-index: 55;
+  bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+  display: flex; align-items: center; gap: 10px;
+  background: var(--accent); color: #16110d;
+  border-radius: 12px; padding: 10px 12px;
+  font-weight: 700; font-size: 14px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+#update-banner span { flex: 1; }
+#update-banner button { background: rgba(0,0,0,.16); border-color: transparent; color: #16110d; }
+@media (min-width: 860px) { #update-banner { left: 220px; right: 24px; bottom: 24px; } }

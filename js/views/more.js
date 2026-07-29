@@ -5,7 +5,8 @@ import * as store from '../store.js';
 import { PROGRAMS, programLifts, incrementFor } from '../programs.js';
 import { MAIN_LIFTS } from '../data/exercises.js';
 import { support } from '../sensors.js';
-import { sheet, confirmSheet } from '../app.js';
+import { sheet, confirmSheet, checkForUpdate, applyUpdate } from '../app.js';
+import { BUILD, BUILT } from '../version.js';
 import * as media from '../media.js';
 import { openProgramManager, openExerciseManager } from './build.js';
 
@@ -118,10 +119,15 @@ export function renderMore(view, ctx) {
     capRow('Secure context', support.secure, support.secure ? 'https or localhost' : 'Sensors and offline mode need https://'),
     capRow('Screen wake lock', support.wakeLock, support.wakeLock ? 'Screen stays on during sessions' : 'Screen may sleep mid-session'),
     capRow('Offline', 'serviceWorker' in navigator && !!navigator.serviceWorker.controller,
-      navigator.serviceWorker?.controller ? 'Cached and ready to run with no signal' : 'Not cached yet — reload once while online'),
+      navigator.serviceWorker?.controller ? 'Cached and ready to run with no signal' : 'Not cached yet — open once while online'),
+    capRow('Version', true, `Build ${BUILD}, ${BUILT}`),
+    updateRow(ctx),
     el('div', { class: 'note' },
       el('b', {}, 'To install: '),
-      'On iPhone, open in Safari, tap Share, then Add to Home Screen. On the Mac in Safari, File → Add to Dock; in Chrome, the install icon in the address bar. Installed, it runs fullscreen with no browser chrome and works with no signal.')
+      'On iPhone, open in Safari, tap Share, then Add to Home Screen. On the Mac in Safari, File → Add to Dock; in Chrome, the install icon in the address bar. Installed, it runs fullscreen with no browser chrome and works with no signal.'),
+    el('div', { class: 'note warn' },
+      el('b', {}, 'Installed apps have no pull-to-refresh. '),
+      'That gesture only exists in the browser. This app checks for a new build every time you bring it to the front and shows a banner when one is ready, and the button above forces a check. If in doubt, compare the build number here against the one you were told to expect.')
   ));
 
   // ---- honesty ----
@@ -170,6 +176,29 @@ function mediaRow() {
     }
   }).catch(() => { node.textContent = 'Media storage is unavailable in this browser.'; });
   return node;
+}
+
+/** Force an update check, since an installed app cannot be pulled to refresh. */
+function updateRow(ctx) {
+  const btn = el('button', { class: 'btn-sm btn-block', style: { marginTop: '10px' } }, 'Check for updates');
+  const status = el('div', { class: 'li-sub', style: { marginTop: '6px' } }, '');
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    status.textContent = 'Checking…';
+    const found = await checkForUpdate();
+    btn.disabled = false;
+    if (found) {
+      status.replaceChildren(
+        el('span', {}, 'A newer build is ready. '),
+        el('button', { class: 'btn-sm', onclick: applyUpdate }, 'Reload now'));
+    } else {
+      status.textContent = navigator.onLine
+        ? `You are on the latest build (${BUILD}).`
+        : 'Offline — cannot check right now.';
+    }
+    void ctx;
+  });
+  return el('div', {}, btn, status);
 }
 
 function toggle(label, value, onChange) {
