@@ -10,7 +10,8 @@ import { el, $, uid, todayISO, num, fmtClock, buzz, toast, platesFor, e1rm, toDi
 import * as store from '../store.js';
 import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, INTERFERENCE_NOTE, findExercise, exerciseName, EQUIPMENT, SPORTS } from '../data/exercises.js';
 import { PROGRAMS, nextWorkout, applySession, phaseAdvice, seedWeight, warmupSets, carryForward,
-         lastLogged, offeredWeight, programLifts, staleWeights, adoptLogged } from '../programs.js';
+         lastLogged, offeredWeight, programLifts, staleWeights, adoptLogged,
+         rotationDays, setRotationDay } from '../programs.js';
 import { startRest, stopRest, sheet, confirmSheet } from '../app.js';
 import { openProgramManager, openExerciseManager, openProgramBuilder } from './build.js';
 import { openRoundTimer, openRoundSettings } from './rounds.js';
@@ -76,6 +77,31 @@ function renderPlan(view, ctx, db) {
         'The app will suggest light numbers from your bodyweight, but the real rule is: start at a weight where every rep is technically perfect, and let the linear progression do the work. Starting too heavy costs you weeks.'),
       el('button', { class: 'btn-primary btn-block', onclick: () => openWeightSetup(ctx, db) }, 'Set starting weights')
     );
+  }
+
+  // Pick the day. The rotation advances on its own, but life does not follow
+  // it — you miss a day, or you want the bag session today and the squats
+  // tomorrow. Changing the day here only changes what you do next; it does
+  // not touch any weight or lose your place in the count.
+  const days = rotationDays(db);
+  if (days.length > 1) {
+    const chips = el('div', { class: 'chips day-picker' },
+      days.map((d) => {
+        const c = el('button', {
+          class: 'chip', 'aria-pressed': String(d.current),
+          title: d.summary,
+        }, d.short);
+        c.addEventListener('click', () => {
+          if (d.current) return;
+          store.update((db2) => setRotationDay(db2, d.index));
+          ctx.refresh();
+        });
+        return c;
+      }));
+    view.append(el('div', { class: 'row between', style: { marginBottom: '8px' } },
+      el('h3', { style: { margin: 0 } }, 'Day'),
+      el('span', { class: 'li-sub' }, `${days.length}-day rotation`)));
+    view.append(chips);
   }
 
   view.append(

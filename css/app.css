@@ -436,3 +436,12 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5
 #update-banner span { flex: 1; }
 #update-banner button { background: rgba(0,0,0,.16); border-color: transparent; color: #16110d; }
 @media (min-width: 860px) { #update-banner { left: 220px; right: 24px; bottom: 24px; } }
+
+/* The day picker can outgrow the screen on a long rotation, so it scrolls
+   sideways rather than wrapping into an unreadable block. */
+.day-picker {
+  flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px;
+  margin-bottom: 12px; scrollbar-width: none;
+}
+.day-picker::-webkit-scrollbar { display: none; }
+.day-picker .chip { flex: 0 0 auto; }

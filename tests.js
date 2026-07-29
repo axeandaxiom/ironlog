@@ -6,7 +6,8 @@ import { platesFor, roundTo, symmetryIndex, e1rm, movingAverage, parseNum, numIn
 import { warmupSets, applySession, nextWorkout, PROGRAMS, incrementFor, lastSessionLike, carryForward,
          registerCustomPrograms, validateProgram, phaseAdvice, programLifts,
          lastLogged, offeredWeight, seedWeight, BW_ADD_WEIGHT_AT, explainOffer, staleWeights, adoptLogged,
-         applyIncrement, isLoadable } from './js/programs.js';
+         applyIncrement, isLoadable, rotationDays, setRotationDay,
+         shortDayLabel } from './js/programs.js';
 import { plan, bmr, calibrate, scaleFood, dayTotals, FOODS } from './js/nutrition.js';
 import { RECIPES, computeMacros } from './js/data/recipes.js';
 import { analyseJump, analyseSway } from './js/sensors.js';
@@ -486,6 +487,62 @@ group('Fine increments survive the plate grid');
   ok(!isLoadable(100.75, S), 'but 100.75 kg is not — it would need 0.375 per side');
   ok(isLoadable(100.5, { ...S, plates: [...S.plates, 0.25] }),
      'add 0.25 kg micro plates and 100.5 becomes loadable');
+}
+
+group('Choosing the day of the rotation');
+{
+  const db = freshDB();
+  db.program.id = 'tv-4day';
+  db.program.cursor = 0;
+
+  let days = rotationDays(db);
+  ok(days.length === 4, 'all four days are listed', String(days.length));
+  ok(days[0].current && !days[2].current, 'the one you are on is marked');
+  ok(days.map((d) => d.short).join(',') === 'Day 1,Day 2,Day 3,Day 4',
+     'with labels short enough for a chip', days.map((d) => d.short).join(','));
+  ok(days[2].conditioning === true, 'a bag day is identified as conditioning');
+  ok(days[0].summary.includes('Squat'), 'and each carries what is in it');
+
+  // Jumping to a day changes what you get next.
+  setRotationDay(db, 3);
+  ok(nextWorkout(db).label.startsWith('Day 4'),
+     'picking day 4 gives you day 4', nextWorkout(db).label);
+  ok(rotationDays(db)[3].current, 'and it shows as current');
+
+  // Your place in the count is kept, not reset — session 9 stays session 9.
+  db.program.cursor = 9;                       // 2 full rotations + day 2
+  setRotationDay(db, 0);
+  ok(db.program.cursor === 8,
+     'jumping back a day moves within the current rotation, not to the start',
+     String(db.program.cursor));
+  setRotationDay(db, 3);
+  ok(db.program.cursor === 11, 'and forward within it too', String(db.program.cursor));
+
+  // Finishing from a chosen day carries on from there.
+  db.program.cursor = 8;
+  applySession(db, {
+    label: 'Day 1 — Squat / Press / Pull', type: 'lift', programId: 'tv-4day',
+    entries: [{ exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: [{ weight: 100, reps: 5, done: true }] }],
+  });
+  ok(db.program.cursor === 9, 'and the rotation resumes from where you picked',
+     String(db.program.cursor));
+
+  // A long or awkward label still yields something chip-sized.
+  ok(shortDayLabel('Day 2 — Weighted Chins / Dips', 1) === 'Day 2', 'long labels are trimmed');
+  ok(shortDayLabel('Volume', 0) === 'Volume', 'a short one is kept as-is');
+  ok(shortDayLabel('', 4) === 'Day 5', 'and an empty one falls back to its number');
+  ok(shortDayLabel('A really long day name with no dash', 2) === 'Day 3',
+     'a long name with nothing to split on falls back too');
+
+  // A single-day programme should not offer a picker at all.
+  registerCustomPrograms([{ id: 'p-one', name: 'One', source: 'x', custom: true,
+    frequency: '', blurb: '',
+    phases: { 1: { name: 'S', note: '', advanceWhen: '',
+      rotation: [{ label: 'Everything', items: [{ ex: 'squat', sets: 3, reps: 5 }] }] } } }]);
+  const one = freshDB(); one.program.id = 'p-one';
+  ok(rotationDays(one).length === 1, 'a one-day programme lists one day');
+  registerCustomPrograms([]);
 }
 
 group('Texas Method');

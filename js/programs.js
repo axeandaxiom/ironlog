@@ -656,6 +656,47 @@ export function isLoadable(weight, settings) {
   return Math.abs(res.short) < 1e-6;
 }
 
+/** Every day in the current rotation, with the one you are on marked. */
+export function rotationDays(db) {
+  const def = PROGRAMS[db.program.id] || PROGRAMS['ss-novice'];
+  const phase = def.phases[db.program.phase] || def.phases[1];
+  const rotation = phase.rotation || [];
+  const cursor = (db.program.cursor || 0) % (rotation.length || 1);
+  return rotation.map((day, i) => ({
+    index: i,
+    label: day.label,
+    short: shortDayLabel(day.label, i),
+    current: i === cursor,
+    conditioning: day.items.every((it) => it.conditioningId),
+    summary: day.items
+      .map((it) => (it.conditioningId ? exerciseName(it.conditioningId) : exerciseName(it.ex)))
+      .join(', '),
+  }));
+}
+
+/**
+ * A label short enough for a chip. Programme days are named for what is in
+ * them ("Day 1 — Squat / Press / Pull"), which is right in a heading and far
+ * too long in a row of buttons.
+ */
+export function shortDayLabel(label, i = 0) {
+  if (!label) return `Day ${i + 1}`;
+  const head = label.split(/\s*[—–-]\s*/)[0].trim();
+  return head.length && head.length <= 12 ? head : `Day ${i + 1}`;
+}
+
+/** Jump to a specific day of the rotation. */
+export function setRotationDay(db, index) {
+  const def = PROGRAMS[db.program.id] || PROGRAMS['ss-novice'];
+  const phase = def.phases[db.program.phase] || def.phases[1];
+  const len = (phase.rotation || []).length;
+  if (!len) return;
+  // Keep the completed-session count intact by moving the cursor to the next
+  // multiple of the rotation plus the chosen day, rather than resetting it.
+  const base = Math.floor((db.program.cursor || 0) / len) * len;
+  db.program.cursor = base + (((index % len) + len) % len);
+}
+
 // ---------------------------------------------------------------------------
 // Progression
 // ---------------------------------------------------------------------------
