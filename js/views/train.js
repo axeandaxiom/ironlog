@@ -10,7 +10,7 @@ import { el, $, uid, todayISO, num, fmtClock, buzz, toast, platesFor, e1rm, toDi
 import * as store from '../store.js';
 import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, INTERFERENCE_NOTE, findExercise, exerciseName, EQUIPMENT, SPORTS } from '../data/exercises.js';
 import { PROGRAMS, nextWorkout, applySession, phaseAdvice, seedWeight, warmupSets, carryForward,
-         lastLogged, offeredWeight, programLifts } from '../programs.js';
+         lastLogged, offeredWeight, programLifts, staleWeights, adoptLogged } from '../programs.js';
 import { startRest, stopRest, sheet, confirmSheet } from '../app.js';
 import { openProgramManager, openExerciseManager, openProgramBuilder } from './build.js';
 import { openRoundTimer, openRoundSettings } from './rounds.js';
@@ -47,6 +47,26 @@ function renderPlan(view, ctx, db) {
     );
     renderRecent(view, db);
     return;
+  }
+
+  // A working weight below what you have already lifted can only be stale.
+  // Surfaced here rather than buried in settings, because this is the screen
+  // where the wrong number would otherwise be acted on.
+  const stale = staleWeights(db);
+  if (stale.length) {
+    const card = el('div', { class: 'note bad' },
+      el('b', {}, stale.length === 1
+        ? `${stale[0].name} is set below what you last lifted. `
+        : `${stale.length} lifts are set below what you last lifted. `),
+      'The stored weight has fallen behind your log, so the app would prescribe less than you have already done.');
+    for (const x of stale) {
+      card.append(el('button', { class: 'btn-sm btn-block', style: { marginTop: '8px' }, onclick: () => {
+        store.update((d) => adoptLogged(d, x.exerciseId));
+        toast(`${x.name} now follows your log`, 'good');
+        ctx.refresh();
+      } }, `${x.name}: use my logged ${num(toDisplayWeight(x.last.weight, unit))} ${unit} instead of ${num(toDisplayWeight(x.working, unit))}`));
+    }
+    view.append(card);
   }
 
   if (!hasWeights(db)) {

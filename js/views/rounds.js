@@ -2,7 +2,7 @@
 
 import { el, fmtClock, num, toast, buzz, numInput, parseNum } from '../util.js';
 import * as store from '../store.js';
-import { RoundTimer, DEFAULT_BOXING, bell, warnBeep, tick, primeAudio } from '../timer.js';
+import { RoundTimer, DEFAULT_BOXING, bell, warnBeep, tick, primeAudio, audioState, stopAudio } from '../timer.js';
 import { keepAwake } from '../sensors.js';
 import { sheet } from '../app.js';
 
@@ -75,11 +75,30 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
       }
     };
 
-    startBtn.addEventListener('click', () => {
+    const audioWarn = el('div', {});
+    const showAudioState = () => {
+      const a = audioState();
+      audioWarn.replaceChildren();
+      if (!cfg.sound) return;
+      if (!a.running) {
+        audioWarn.append(el('div', { class: 'note warn' },
+          el('b', {}, 'No sound yet. '),
+          'Tap Start — a browser will only begin playing audio from a real tap.'));
+      } else if (!a.canBeatSilentSwitch) {
+        audioWarn.append(el('div', { class: 'note warn' },
+          el('b', {}, 'Check the ringer switch on the side of the phone. '),
+          'On this iOS version the switch mutes web audio and nothing in the app can override it. '
+          + 'Turn the ringer on, or plug in headphones.'));
+      }
+    };
+
+    startBtn.addEventListener('click', async () => {
       // Both of these must happen inside a real tap: iOS will not start audio
       // or grant a wake lock from a timer callback.
-      primeAudio();
+      const ok = await primeAudio();
       keepAwake(true);
+      showAudioState();
+      if (!ok && cfg.sound) toast('Sound could not start — check the ringer switch', 'bad');
       timer.toggle();
     });
 
@@ -92,6 +111,7 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
       el('div', { class: 'round-wrap' },
         counter, clock, phase, ring),
       startBtn,
+      audioWarn,
       controls,
       el('div', { class: 'note' },
         `${cfg.rounds} × ${fmtClock(cfg.roundSec)} with ${fmtClock(cfg.restSec)} rest. `
@@ -107,7 +127,8 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
     );
 
     timer.onTick(timer.state);
-  }, { onClose: () => { timer.stop(); keepAwake(false); } });
+    showAudioState();
+  }, { onClose: () => { timer.stop(); keepAwake(false); stopAudio(); } });
 }
 
 export function openRoundSettings(ctx, after) {
@@ -143,8 +164,13 @@ export function openRoundSettings(ctx, after) {
       el('div', { class: 'note' },
         'The last five seconds of every phase tick audibly regardless, so you always know where you are without looking.'),
       el('div', { class: 'btn-row', style: { marginTop: '12px' } },
-        el('button', { onclick: () => { primeAudio(); bell(1); } }, 'Test bell'),
-        el('button', { onclick: () => { primeAudio(); warnBeep(2, 760); } }, 'Test warning')),
+        el('button', { onclick: async () => {
+          const ok = await primeAudio();
+          bell(1);
+          toast(ok ? 'Bell played — if you heard nothing, check the ringer switch' : 'Audio could not start', ok ? 'good' : 'bad');
+        } }, 'Test bell'),
+        el('button', { onclick: async () => { await primeAudio(); warnBeep(2, 760); } }, 'Test warning')),
+      audioNote(),
       el('button', { class: 'btn-primary btn-block', style: { marginTop: '12px' }, onclick: () => {
         const next = { ...cfg };
         for (const [k, inp] of Object.entries(f)) {
@@ -164,6 +190,22 @@ export function openRoundSettings(ctx, after) {
       } }, 'Save')
     );
   });
+}
+
+/** Say plainly what will and will not make a noise on this device. */
+function audioNote() {
+  const a = audioState();
+  const lines = [];
+  if (!a.canBeatSilentSwitch) {
+    lines.push('The ringer switch on the side of the phone mutes web audio on this iOS version, and no app setting can override it. Turn the ringer on, or use headphones.');
+  } else {
+    lines.push('Sound is requested as playback audio, so the ringer switch should not mute it.');
+  }
+  if (!a.canVibrate) {
+    lines.push('Vibration is not available in Safari on iOS, so the vibrate setting will do nothing on an iPhone. It works on Android.');
+  }
+  lines.push('Test the bell here before you rely on it in a session.');
+  return el('div', { class: 'note warn' }, lines.join(' '));
 }
 
 function toggleRow(label, value, onChange) {

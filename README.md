@@ -39,7 +39,7 @@ certificate, which removes the warning and the LAN requirement entirely.
 open http://localhost:8765/tests.html
 ```
 
-287 assertions covering the progression engine, plate and warm-up maths,
+304 assertions covering the progression engine, plate and warm-up maths,
 warm-up isolation, carry-forward ownership rules, custom exercises and
 programmes, the round timer (including background catch-up), attachment
 storage, nutrition calculations,
@@ -96,6 +96,14 @@ carried by its progression. An accessory has no progression to carry it, so the
 log does: whatever you last used comes back next time, per movement. A weight
 written into a programme only seeds a movement the first time — after that your
 own history governs it. Reps stay the programme's business.
+
+**The stored weight can never silently outrank your log.** A working weight is
+a *cache* of what you lifted — the progression derives it. It exists for two
+reasons the log cannot cover: it carries the increment (you lifted 100, it
+stores 102.5), and it lets you deload by hand. But it should never sit below
+your last logged set, and if it does the training screen says so and offers to
+drop it in one tap. **More → Data → "Why is it showing this weight?"** explains
+every prescribed weight and which rule produced it.
 
 **Nothing you typed is discarded.** A set with reps against it is data you
 entered deliberately. Finishing a session with work sets filled in but not
@@ -338,6 +346,15 @@ No framework, no build step, no dependencies. Edit a file, reload the page.
   launch and on every return to the foreground, shows a banner when a new build
   is ready, and displays its build number under More → This device. Bump
   `BUILD` in `js/version.js` and `CACHE` in `sw.js` together, always.
+- **Getting sound out of an iPhone is three fights, not one.** The context
+  starts suspended and needs a real tap; Web Audio defaults to the "ambient"
+  session which the ringer switch mutes, so `navigator.audioSession.type` is
+  set to `playback` where it exists (iOS 16.4+) and the UI says so plainly
+  where it does not; and an idle context gets suspended, so a silent looping
+  source holds the session open across a three-minute round. Without the last
+  one the first bell plays and nothing after it does. `navigator.vibrate` does
+  not exist in Safari on iOS at all — the UI says that too rather than
+  pretending.
 - **Never drive a timer with `requestAnimationFrame`.** rAF delivers exactly
   zero frames while the page is hidden — screen off, app switched away, phone
   in a pocket — so a rAF-driven clock stops dead mid-round and its alerts never

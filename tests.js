@@ -5,7 +5,7 @@
 import { platesFor, roundTo, symmetryIndex, e1rm, movingAverage, parseNum, numInput } from './js/util.js';
 import { warmupSets, applySession, nextWorkout, PROGRAMS, incrementFor, lastSessionLike, carryForward,
          registerCustomPrograms, validateProgram, phaseAdvice, programLifts,
-         lastLogged, offeredWeight, seedWeight, BW_ADD_WEIGHT_AT } from './js/programs.js';
+         lastLogged, offeredWeight, seedWeight, BW_ADD_WEIGHT_AT, explainOffer, staleWeights, adoptLogged } from './js/programs.js';
 import { plan, bmr, calibrate, scaleFood, dayTotals, FOODS } from './js/nutrition.js';
 import { RECIPES, computeMacros } from './js/data/recipes.js';
 import { analyseJump, analyseSway } from './js/sensors.js';
@@ -1130,6 +1130,81 @@ group('Build version');
 {
   ok(/^v\d+$/.test(BUILD), `build is tagged (${BUILD})`);
   ok(typeof BUILT === 'string' && BUILT.length >= 8, 'and dated');
+}
+
+group('Explaining where a weight came from');
+{
+  const db = freshDB();
+  db.program.working = { squat: 25 };
+  db.sessions = [];
+
+  let x = explainOffer(db, 'squat');
+  ok(x.offered === 25 && x.source === 'the progression', 'a stored weight is reported as such');
+  ok(x.detail.includes('nothing has ever been logged'),
+     'and it says plainly that the number did not come from training', x.detail);
+
+  // A stored weight that disagrees with real history is the confusing case.
+  db.sessions = [{ id: 'r', date: '2026-07-29', type: 'lift', label: 'A',
+    entries: [{ exerciseId: 'squat', sets: [{ weight: 100, reps: 5, done: true }] }] }];
+  x = explainOffer(db, 'squat');
+  ok(x.offered === 25 && x.last.weight === 100,
+     'the stored weight still wins, and the conflict is visible');
+  ok(x.detail.includes('always wins over history'), 'and the reason is stated');
+  ok(x.sessions === 1, 'with a count of how often the lift appears in the log');
+
+  // Dropping the stored weight hands control back to the log.
+  delete db.program.working.squat;
+  x = explainOffer(db, 'squat');
+  ok(x.offered === 100 && x.source === 'your log',
+     'without it, the log governs', `${x.offered} from ${x.source}`);
+
+  // A session whose sets were discarded looks empty, and should read that way.
+  const ghost = freshDB();
+  ghost.program.working = { squat: 25 };
+  ghost.sessions = [{ id: 'g', date: '2026-07-28', type: 'lift', label: 'A',
+    entries: [{ exerciseId: 'squat', sets: [], warmupSets: [] }] }];
+  ok(lastLogged(ghost, 'squat') === null,
+     'a session with no sets carries nothing, however many entries it has');
+  ok(explainOffer(ghost, 'squat').detail.includes('nothing has ever been logged'),
+     'and the diagnosis says so rather than blaming the progression');
+
+  // Accessories report their own source.
+  const acc = freshDB();
+  acc.sessions = [{ id: 'a', date: '2026-07-29', type: 'lift', label: 'A',
+    entries: [{ exerciseId: 'liu-raise', assistance: true, sets: [{ weight: 8, reps: 15, done: true }] }] }];
+  ok(explainOffer(acc, 'liu-raise').source === 'your log',
+     'accessory work is reported as coming from the log');
+}
+
+group('A stale working weight cannot silently win');
+{
+  const db = freshDB();
+  db.program.id = 'tv-4day';
+  db.program.working = { squat: 25, press: 60, deadlift: 140 };
+  db.sessions = [{ id: 'r', date: '2026-07-29', type: 'lift', programId: 'tv-4day', label: 'D',
+    entries: [
+      { exerciseId: 'squat', sets: [{ weight: 100, reps: 5, done: true }] },
+      { exerciseId: 'press', sets: [{ weight: 55, reps: 5, done: true }] },
+    ] }];
+
+  const stale = staleWeights(db);
+  ok(stale.length === 1 && stale[0].exerciseId === 'squat',
+     'a weight below what you already lifted is flagged',
+     JSON.stringify(stale.map((x) => x.exerciseId)));
+  ok(stale[0].working === 25 && stale[0].last.weight === 100,
+     'with both numbers, so the choice is informed');
+  ok(!stale.some((x) => x.exerciseId === 'press'),
+     'a weight ABOVE the last logged set is not flagged — that is the increment working');
+  ok(!stale.some((x) => x.exerciseId === 'deadlift'),
+     'and a lift with no history is not flagged at all');
+
+  const now = adoptLogged(db, 'squat');
+  ok(now === 100, 'adopting the log gives you the weight you actually lifted', String(now));
+  ok(db.program.working.squat === undefined, 'and clears the stale number');
+  ok(staleWeights(db).length === 0, 'leaving nothing flagged');
+  ok(nextWorkout(db).items[0].weight === 100,
+     'so the next session is prescribed from reality',
+     String(nextWorkout(db).items[0].weight));
 }
 
 group('The four-day preset');

@@ -243,16 +243,74 @@ export class RoundTimer {
 // ---------------------------------------------------------------------------
 
 let ctx = null;
+let keepAlive = null;
 
-/** Must be called from a user gesture, or iOS keeps the context suspended. */
-export function primeAudio() {
+/**
+ * Getting sound out of an iPhone is three separate fights, not one.
+ *
+ *  1. The context starts suspended and only a real user gesture may resume it.
+ *  2. Web Audio defaults to the "ambient" audio session, which the hardware
+ *     ringer switch mutes. iOS 16.4+ exposes navigator.audioSession, so we ask
+ *     for "playback" and the switch stops mattering. Below that version it
+ *     genuinely cannot be worked around — the switch wins, and the UI says so.
+ *  3. An idle context gets suspended by the system. A three-minute round is a
+ *     long idle gap, so a silent looping source holds the session open; without
+ *     it the bell at the end of round one plays and nothing after it does.
+ */
+export async function primeAudio() {
   try {
     ctx ||= new (window.AudioContext || window.webkitAudioContext)();
-    if (ctx.state === 'suspended') ctx.resume();
-    return true;
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch { /* not supported; the ringer switch will win */ }
+    if (ctx.state === 'suspended') await ctx.resume();
+    startKeepAlive();
+    return ctx.state === 'running';
   } catch {
     return false;
   }
+}
+
+function startKeepAlive() {
+  if (keepAlive || !ctx) return;
+  try {
+    const buf = ctx.createBuffer(1, Math.round(ctx.sampleRate), ctx.sampleRate);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    const g = ctx.createGain();
+    g.gain.value = 0.0001;          // inaudible, but output all the same
+    src.connect(g).connect(ctx.destination);
+    src.start();
+    keepAlive = src;
+  } catch { /* best effort */ }
+}
+
+export function stopAudio() {
+  try { keepAlive?.stop(); } catch { /* already stopped */ }
+  keepAlive = null;
+}
+
+/** What the UI needs to tell you honestly whether you will hear anything. */
+export function audioState() {
+  return {
+    started: !!ctx,
+    running: ctx?.state === 'running',
+    // Below iOS 16.4 the ringer switch mutes Web Audio and nothing can change it.
+    canBeatSilentSwitch: typeof navigator !== 'undefined' && !!navigator.audioSession,
+    // Vibration is not implemented in Safari on iOS at all.
+    canVibrate: typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function',
+  };
+}
+
+// The system suspends the context whenever the app goes to the background.
+// Resume the moment it comes back, or every remaining bell is silent.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && ctx?.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  });
 }
 
 function tone(freq, start, dur, gain = 0.25, type = 'sine') {
@@ -270,7 +328,9 @@ function tone(freq, start, dur, gain = 0.25, type = 'sine') {
 
 /** A boxing bell: inharmonic partials, long ring. */
 export function bell(strikes = 1) {
-  if (!primeAudio()) return;
+  // Never awaited: a bell is fired from a timer tick, and by then the context
+  // was already primed by the tap on Start.
+  if (!ctx || ctx.state !== 'running') { primeAudio(); if (!ctx) return; }
   const base = ctx.currentTime;
   for (let s = 0; s < strikes; s++) {
     const t = base + s * 0.42;
@@ -283,7 +343,7 @@ export function bell(strikes = 1) {
 
 /** Warning: a short, hard double beep that cuts through a gym. */
 export function warnBeep(count = 2, freq = 880) {
-  if (!primeAudio()) return;
+  if (!ctx || ctx.state !== 'running') { primeAudio(); if (!ctx) return; }
   const base = ctx.currentTime;
   for (let i = 0; i < count; i++) {
     tone(freq, base + i * 0.18, 0.12, 0.3, 'square');
@@ -292,6 +352,6 @@ export function warnBeep(count = 2, freq = 880) {
 
 /** A single tick, for the last few seconds. */
 export function tick(freq = 1200) {
-  if (!primeAudio()) return;
+  if (!ctx || ctx.state !== 'running') return;
   tone(freq, ctx.currentTime, 0.05, 0.18, 'square');
 }

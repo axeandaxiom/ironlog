@@ -553,6 +553,82 @@ export function offeredWeight(db, exId, startWeight = null) {
   return seedWeight(exId, db.profile, db.settings);
 }
 
+/**
+ * Why is this the weight on offer?
+ *
+ * Every rule that can decide a prescribed weight, reported with the one that
+ * actually fired. "It is not carrying over" is otherwise unanswerable without
+ * reading someone's storage by hand.
+ */
+export function explainOffer(db, exId) {
+  const lift = MAIN_LIFTS[exId];
+  const working = db.program.working[exId];
+  const last = lastLogged(db, exId);
+  const sessions = (db.sessions || []).filter((s) =>
+    (s.entries || []).some((e) => e.exerciseId === exId)).length;
+
+  let source, detail;
+  if (!lift) {
+    source = last ? 'your log' : 'the programme';
+    detail = last
+      ? `Accessory work has no progression, so it comes back at the ${last.weight} kg you used on ${last.date}.`
+      : 'Accessory work has no progression and nothing logged yet, so the programme decides.';
+  } else if (working != null) {
+    source = 'the progression';
+    detail = last
+      ? `A working weight of ${working} kg is stored, and a stored working weight always wins over history. Your last logged set was ${last.weight} kg × ${last.reps} on ${last.date}.`
+      : `A working weight of ${working} kg is stored, but nothing has ever been logged for this lift — so this number came from setup, not from training.`;
+  } else if (last && last.weight > 0) {
+    source = 'your log';
+    detail = `No working weight is stored, so it falls back to the ${last.weight} kg × ${last.reps} you logged on ${last.date}.`;
+  } else {
+    source = 'a bodyweight estimate';
+    detail = 'Nothing logged and no working weight, so this is only a starting suggestion.';
+  }
+
+  return {
+    exerciseId: exId,
+    name: exerciseName(exId),
+    offered: lift ? offeredWeight(db, exId) : (last?.weight ?? null),
+    working: working ?? null,
+    last,
+    sessions,
+    source,
+    detail,
+  };
+}
+
+/**
+ * Working weights that have fallen behind the log.
+ *
+ * The working weight is a cache: applySession derives it from what you
+ * actually lifted. So it should never be BELOW your last logged set — that can
+ * only mean it went stale, and a stale cache silently outranking its own
+ * source is how a real session gets ignored.
+ *
+ * Only the unambiguous direction is reported. A working weight above the last
+ * logged set is normal — that is the increment doing its job.
+ */
+export function staleWeights(db) {
+  const out = [];
+  for (const id of programLifts(db)) {
+    const working = db.program.working[id];
+    const last = lastLogged(db, id);
+    if (working == null || !last || !(last.weight > 0)) continue;
+    if (working < last.weight - 1e-6) {
+      out.push({ exerciseId: id, name: exerciseName(id), working, last });
+    }
+  }
+  return out;
+}
+
+/** Drop a stale working weight so the log takes over again. */
+export function adoptLogged(db, exId) {
+  delete db.program.working[exId];
+  if (db.program.fails) delete db.program.fails[exId];
+  return offeredWeight(db, exId);
+}
+
 // ---------------------------------------------------------------------------
 // Progression
 // ---------------------------------------------------------------------------

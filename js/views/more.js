@@ -2,7 +2,7 @@
 
 import { el, num, download, toast, toDisplayWeight, fromDisplayWeight, fmtDateLong, numInput, parseNum } from '../util.js';
 import * as store from '../store.js';
-import { PROGRAMS, programLifts, incrementFor } from '../programs.js';
+import { PROGRAMS, programLifts, incrementFor, explainOffer } from '../programs.js';
 import { MAIN_LIFTS } from '../data/exercises.js';
 import { support } from '../sensors.js';
 import { sheet, confirmSheet, checkForUpdate, applyUpdate } from '../app.js';
@@ -27,6 +27,8 @@ export function renderMore(view, ctx) {
         toast('Exported', 'good');
       } }, 'Export'),
       el('button', { onclick: () => openImport(ctx) }, 'Import')),
+    el('button', { class: 'btn-sm btn-block', style: { marginTop: '8px' },
+      onclick: () => openDiagnose(ctx) }, 'Why is it showing this weight?'),
     el('div', { class: 'note' },
       el('b', {}, 'How to sync phone and Mac: '),
       'Export on the device you just used, save the file into Dropbox or iCloud Drive, then Import it on the other device and choose Merge. Merge de-duplicates by record id, so importing the same file twice changes nothing.'),
@@ -158,6 +160,61 @@ export function renderMore(view, ctx) {
     `IronLog · data created ${fmtDateLong(db.createdAt.slice(0, 10))}`));
 }
 
+/**
+ * Where every prescribed weight comes from.
+ * Turns "it is not carrying over" into a specific, checkable answer.
+ */
+function openDiagnose(ctx) {
+  sheet('Where the weights come from', (body) => {
+    const db = store.get();
+    const unit = db.settings.units;
+    const lifts = programLifts(db);
+
+    const liftSessions = db.sessions.filter((s) => s.type === 'lift' || s.type === 'free');
+    const withSets = liftSessions.filter((s) =>
+      (s.entries || []).some((e) => (e.sets || []).length));
+
+    body.append(el('div', { class: 'stat-grid' },
+      st(db.sessions.length, 'Sessions'),
+      st(withSets.length, 'With sets', withSets.length ? null : 'warn'),
+      st(Object.keys(db.program.working).length, 'Weights set')));
+
+    if (liftSessions.length && !withSets.length) {
+      body.append(el('div', { class: 'note bad' },
+        el('b', {}, 'Your sessions contain no sets. '),
+        'They were finished without any set being ticked, and on a build before v9 those were discarded silently. '
+        + 'That is why nothing carries forward — there is nothing in the log to carry. From v9 the app asks before dropping anything.'));
+    }
+    if (!db.sessions.length) {
+      body.append(el('div', { class: 'note warn' },
+        el('b', {}, 'Nothing is logged on this device at all. '),
+        'If you trained on another device, import its export file first — training data does not travel by itself.'));
+    }
+
+    for (const id of lifts) {
+      const x = explainOffer(db, id);
+      body.append(el('div', { class: 'card tight' },
+        el('div', { class: 'row between' },
+          el('div', { class: 'grow' },
+            el('div', { class: 'li-title' }, x.name),
+            el('div', { class: 'li-sub' }, `Source: ${x.source} · logged ${x.sessions}×`)),
+          el('div', { class: 'li-right', style: { fontSize: '15px', color: 'var(--text)' } },
+            x.offered != null ? `${num(toDisplayWeight(x.offered, unit))} ${unit}` : '–')),
+        el('div', { class: 'li-sub', style: { marginTop: '6px' } }, x.detail),
+        x.working != null && x.last && Math.abs(x.working - x.last.weight) > 0.01
+          && el('button', { class: 'btn-sm btn-block', style: { marginTop: '8px' }, onclick: () => {
+            store.update((d) => { delete d.program.working[id]; });
+            toast(`${x.name} now follows your log`, 'good');
+            ctx.refresh();
+          } }, `Use my logged ${num(toDisplayWeight(x.last.weight, unit))} ${unit} instead`)));
+    }
+
+    body.append(el('div', { class: 'note' },
+      'A stored working weight always wins over your history, because it is the programme\'s own state — that is what lets you deload by hand. '
+      + 'If one has drifted from what you are actually lifting, the button on it will drop it and let the log take over.'));
+  });
+}
+
 /** Media lives in IndexedDB, not in the export file — say so, and show the size. */
 function mediaRow() {
   const node = el('div', { class: 'note' }, 'Checking attached media…');
@@ -200,6 +257,10 @@ function updateRow(ctx) {
   });
   return el('div', {}, btn, status);
 }
+
+const st = (v, l, kind) => el('div', { class: `stat ${kind || ''}` },
+  el('div', { class: 'stat-val' }, String(v)),
+  el('div', { class: 'stat-lbl' }, l));
 
 function toggle(label, value, onChange) {
   const btn = el('button', { class: 'chip', 'aria-pressed': String(!!value) }, value ? 'On' : 'Off');
