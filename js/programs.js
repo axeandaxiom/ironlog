@@ -629,6 +629,33 @@ export function adoptLogged(db, exId) {
   return offeredWeight(db, exId);
 }
 
+/**
+ * Add an increment without the plate grid eating it.
+ *
+ * Snapping every result to the smallest loadable pair is right when the
+ * increment is a multiple of it — it keeps 2.5 kg jumps landing on round
+ * numbers. It is wrong the moment you micro-load: with 1.25 kg plates the grid
+ * is 2.5 kg, so a 0.75 kg increment would round straight back to where it
+ * started and the lift would never move.
+ *
+ * So: snap only when the increment fits the grid. Otherwise take the user at
+ * their word — they know what they can hang on the bar, and the plate line
+ * says plainly when a number cannot be loaded.
+ */
+export function applyIncrement(current, inc, smallest) {
+  const fitsGrid = smallest > 0 && Math.abs(inc / smallest - Math.round(inc / smallest)) < 1e-9;
+  const next = current + inc;
+  // Trim binary floating-point dust either way: 100 + 0.75 must be 100.75.
+  return fitsGrid ? roundTo(next, smallest) : Math.round(next * 1000) / 1000;
+}
+
+/** Can this weight actually be loaded, given the bar and plates? */
+export function isLoadable(weight, settings) {
+  if (weight <= settings.barWeight) return weight === settings.barWeight;
+  const res = platesFor(weight, settings.barWeight, settings.plates);
+  return Math.abs(res.short) < 1e-6;
+}
+
 // ---------------------------------------------------------------------------
 // Progression
 // ---------------------------------------------------------------------------
@@ -690,7 +717,7 @@ export function applySession(db, session) {
         // still building towards their first weighted rep.
         const best = Math.max(...done.map((s) => s.reps));
         if (best >= BW_ADD_WEIGHT_AT) {
-          prog.working[entry.exerciseId] = roundTo(current + inc, 1.25);
+          prog.working[entry.exerciseId] = applyIncrement(current, inc, 0);
           changes.push({ ex: entry.exerciseId, type: 'up', from: current, to: prog.working[entry.exerciseId],
             why: `${best} reps clears ${BW_ADD_WEIGHT_AT} — start adding weight.` });
         } else {
@@ -701,20 +728,22 @@ export function applySession(db, session) {
         // Run with a rep target, a chin-up or a dip is just a pressing or
         // pulling lift whose bar happens to be your own body. The added load
         // progresses on exactly the same rules as a barbell lift.
-        prog.working[entry.exerciseId] = roundTo(current + inc, 1.25);
+        // Added weight hangs off a belt: no symmetry to satisfy, so any
+        // increment you own is loadable and none of it is snapped away.
+        prog.working[entry.exerciseId] = applyIncrement(current, inc, 0);
         changes.push({ ex: entry.exerciseId, type: 'up', from: current, to: prog.working[entry.exerciseId],
           why: `All reps at ${current > 0 ? `+${current} kg` : 'bodyweight'}. +${inc} kg added.` });
       } else if (def.id === 'texas-method') {
         // Weekly, and only off the intensity day.
         if (session.label === 'Intensity') {
-          prog.working[entry.exerciseId] = roundTo(current + inc, smallest);
+          prog.working[entry.exerciseId] = applyIncrement(current, inc, smallest);
           changes.push({ ex: entry.exerciseId, type: 'up', from: current, to: prog.working[entry.exerciseId],
             why: `New 5RM. Next week +${inc} kg.` });
         } else {
           changes.push({ ex: entry.exerciseId, type: 'hold', why: 'Volume/recovery day — no change.' });
         }
       } else {
-        prog.working[entry.exerciseId] = roundTo(current + inc, smallest);
+        prog.working[entry.exerciseId] = applyIncrement(current, inc, smallest);
         changes.push({ ex: entry.exerciseId, type: 'up', from: current, to: prog.working[entry.exerciseId],
           why: `All reps made. +${inc} kg.` });
       }

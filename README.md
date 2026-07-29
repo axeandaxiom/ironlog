@@ -39,7 +39,7 @@ certificate, which removes the warning and the LAN requirement entirely.
 open http://localhost:8765/tests.html
 ```
 
-304 assertions covering the progression engine, plate and warm-up maths,
+316 assertions covering the progression engine, plate and warm-up maths,
 warm-up isolation, carry-forward ownership rules, custom exercises and
 programmes, the round timer (including background catch-up), attachment
 storage, nutrition calculations,
@@ -96,6 +96,15 @@ carried by its progression. An accessory has no progression to carry it, so the
 log does: whatever you last used comes back next time, per movement. A weight
 written into a programme only seeds a movement the first time — after that your
 own history governs it. Reps stay the programme's business.
+
+**Micro-loading works.** Increments are not snapped to the plate grid unless
+they actually fit it — a 0.75 kg jump used to round straight back to where it
+started and the lift never moved. Quick picks of 0.5 / 0.75 / 1 / 1.25 / 2.5 /
+5 sit under each lift, and any number can be typed. The app also says whether
+the jump is physically loadable: a barbell splits it across two sides, so
+0.75 kg needs 0.375 kg plates and is not loadable on a bar — but it is fine on
+a chin-up belt, a dumbbell or a machine, and it is used faithfully there.
+Nothing is silently rounded away either way.
 
 **The stored weight can never silently outrank your log.** A working weight is
 a *cache* of what you lifted — the progression derives it. It exists for two

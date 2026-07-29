@@ -315,15 +315,58 @@ function openIncrements(ctx, db) {
     const unit = db.settings.units;
     const inputs = {};
     body.append(el('div', { class: 'note' },
-      'How much the app adds after a successful session. The defaults follow the book: bigger jumps on the deadlift, smaller on the press, and everything drops to the smaller jump after your first reset. Override them if your plates or your progress say otherwise.'));
+      'How much the app adds after a successful session. The defaults follow the book: bigger jumps on the deadlift, smaller on the press, and everything drops to the smaller jump after your first reset. Override them if your plates or your progress say otherwise.'),
+      el('div', { class: 'note warn' },
+        el('b', {}, 'Micro-loading. '),
+        'A barbell jump is split across two sides, so a 0.75 kg increase needs 0.375 kg plates — which do not exist. '
+        + '0.75 kg is loadable on a chin-up or dip belt, on a dumbbell, and on most machines, and the app will use it faithfully there. '
+        + 'For a bar, either buy 0.25 or 0.5 kg micro plates and add them under Bar & units, or use 0.5 kg per side for a 1 kg jump. '
+        + 'Nothing is silently rounded away either way.'));
+    // Common jumps, including micro-loading. Typing any other number works too.
+    const PICKS = [0.5, 0.75, 1, 1.25, 2.5, 5];
+
     for (const id of programLifts(db)) {
       const lift = MAIN_LIFTS[id];
       const cur = incrementFor(db.program, id);
       const inp = numInput({ value: num(toDisplayWeight(cur, unit)) });
       inputs[id] = inp;
+
+      const warn = el('div', { class: 'li-sub' });
+      const checkLoadable = () => {
+        const v = fromDisplayWeight(parseNum(inp), unit);
+        warn.replaceChildren();
+        if (Number.isNaN(v) || v <= 0) return;
+        if (lift.bodyweight) {
+          warn.append('Added weight hangs off a belt, so any increment you own works.');
+          return;
+        }
+        // A barbell needs the jump split evenly across two sides.
+        const perSide = v / 2;
+        const smallestPlate = Math.min(...db.settings.plates);
+        const ok = Math.abs(perSide / smallestPlate - Math.round(perSide / smallestPlate)) < 1e-9;
+        warn.append(ok
+          ? `Needs ${num(toDisplayWeight(perSide, unit))} ${unit} per side — you have that.`
+          : `Needs ${num(toDisplayWeight(perSide, unit))} ${unit} per side. Your smallest plate is `
+            + `${num(toDisplayWeight(smallestPlate, unit))} ${unit}, so this jump is not loadable on a bar `
+            + 'unless you add micro plates. The app will still use it, and the plate line will say what it cannot make.');
+        warn.style.color = ok ? 'var(--muted)' : 'var(--warn)';
+      };
+      inp.addEventListener('change', checkLoadable);
+
+      const picks = el('div', { class: 'chips', style: { marginTop: '6px' } },
+        PICKS.map((v) => {
+          const b = el('button', { class: 'chip' }, `${num(toDisplayWeight(v, unit))}`);
+          b.addEventListener('click', () => {
+            inp.value = num(toDisplayWeight(v, unit));
+            checkLoadable();
+          });
+          return b;
+        }));
+
       body.append(el('div', { class: 'field' },
         el('label', {}, `${lift.name} (${unit}) — default ${num(toDisplayWeight(lift.increment, unit))}, ${num(toDisplayWeight(lift.lateIncrement, unit))} after a reset`),
-        inp));
+        inp, picks, warn));
+      checkLoadable();
     }
     body.append(el('button', { class: 'btn-primary btn-block', onclick: () => {
       store.update((d) => {

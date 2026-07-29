@@ -5,7 +5,8 @@
 import { platesFor, roundTo, symmetryIndex, e1rm, movingAverage, parseNum, numInput } from './js/util.js';
 import { warmupSets, applySession, nextWorkout, PROGRAMS, incrementFor, lastSessionLike, carryForward,
          registerCustomPrograms, validateProgram, phaseAdvice, programLifts,
-         lastLogged, offeredWeight, seedWeight, BW_ADD_WEIGHT_AT, explainOffer, staleWeights, adoptLogged } from './js/programs.js';
+         lastLogged, offeredWeight, seedWeight, BW_ADD_WEIGHT_AT, explainOffer, staleWeights, adoptLogged,
+         applyIncrement, isLoadable } from './js/programs.js';
 import { plan, bmr, calibrate, scaleFood, dayTotals, FOODS } from './js/nutrition.js';
 import { RECIPES, computeMacros } from './js/data/recipes.js';
 import { analyseJump, analyseSway } from './js/sensors.js';
@@ -445,6 +446,46 @@ group('Falling back to the log');
   ok(lastLogged(db, 'squat').weight === 97.5,
      'and a heavy warm-up entry cannot masquerade as a work set',
      String(lastLogged(db, 'squat').weight));
+}
+
+group('Fine increments survive the plate grid');
+{
+  const S = SETTINGS;                       // smallest loadable pair = 2.5 kg
+  ok(applyIncrement(100, 2.5, 2.5) === 102.5, 'a grid-sized jump still snaps to the grid');
+  ok(applyIncrement(101, 2.5, 2.5) === 102.5, 'and pulls an off-grid weight back onto it');
+
+  // The bug this covers: 0.75 rounded straight back to where it started.
+  ok(applyIncrement(100, 0.75, 2.5) === 100.75,
+     'a 0.75 kg increment is added exactly, not rounded away',
+     String(applyIncrement(100, 0.75, 2.5)));
+  ok(applyIncrement(100.75, 0.75, 2.5) === 101.5, 'and it accumulates');
+  ok(applyIncrement(101.5, 0.75, 2.5) === 102.25, 'session after session');
+
+  // Floating-point dust must not leak into a displayed weight.
+  let w = 100;
+  for (let i = 0; i < 8; i++) w = applyIncrement(w, 0.75, 2.5);
+  ok(w === 106, 'eight 0.75 kg jumps land exactly on 106', String(w));
+
+  ok(applyIncrement(20, 0.5, 2.5) === 20.5, '0.5 kg works the same way');
+  ok(applyIncrement(0, 0.75, 0) === 0.75, 'and so does added weight from bodyweight');
+
+  // End to end through the progression.
+  const db = freshDB();
+  db.program.increments = { squat: 0.75 };
+  applySession(db, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: Array.from({ length: 3 }, () => ({ weight: 100, reps: 5, done: true })) }],
+  });
+  ok(db.program.working.squat === 100.75,
+     'a 0.75 kg increment set by hand actually moves the lift',
+     String(db.program.working.squat));
+
+  // And it is honest about what a bar can hold.
+  ok(isLoadable(102.5, S), '102.5 kg is loadable with 1.25 plates');
+  ok(!isLoadable(100.75, S), 'but 100.75 kg is not — it would need 0.375 per side');
+  ok(isLoadable(100.5, { ...S, plates: [...S.plates, 0.25] }),
+     'add 0.25 kg micro plates and 100.5 becomes loadable');
 }
 
 group('Texas Method');
