@@ -177,12 +177,29 @@ def parse(text: str) -> tuple[list[dict], list[str]]:
             UNCERTAIN.append(f"line {lineno}  [{cur['date'] if cur else 'no date'}]  {line}")
             continue
 
-        # A bare date starts a new session.
-        iso = parse_date(line.split()[0]) if line.split() else None
-        if iso and len(line.split()) == 1:
+        # A date starts a new session, and may carry the bodyweight written
+        # beside it: "14.11.25 77" or "23.3.26 77,6".
+        toks = line.split()
+        iso = parse_date(toks[0]) if toks else None
+        if iso and len(toks) <= 2:
             cur = {"date": iso, "entries": []}
             sessions.append(cur)
             entry = None
+            if len(toks) == 2:
+                bw = parse_num(toks[1])
+                if bw is None:
+                    warnings.append(f"line {lineno}: could not read bodyweight '{toks[1]}'")
+                else:
+                    # Bodyweight follows the same unit as the lifts on that page.
+                    if unit == "lb":
+                        bw = round(bw * LB_PER_KG, 2)
+                    # A sanity range: a human is not 25 kg and not 250 kg, and
+                    # a misread digit is the likeliest cause of either.
+                    if not (35 <= bw <= 200):
+                        warnings.append(
+                            f"line {lineno}: bodyweight {bw:g} kg is outside a plausible range — skipped")
+                    else:
+                        cur["bodyweight"] = bw
             continue
 
         if cur is None:
@@ -300,6 +317,21 @@ def to_import(sessions: list[dict]) -> dict:
                 "entries": entries, "durationSec": None,
             })
 
+    # Bodyweight rides along as a health metric, with its definition included
+    # so the chart simply appears rather than needing to be set up first.
+    bw_entries = [
+        {"id": f"bl-bw-{s['date']}", "metricId": "m-bw", "date": s["date"],
+         "value": s["bodyweight"], "note": "From paper log"}
+        for s in sessions if s.get("bodyweight") is not None
+    ]
+    bw_defs = [{
+        "id": "m-bw", "label": "Bodyweight", "unit": "kg", "kind": "number",
+        "dp": 1, "better": "flat", "core": True,
+        "note": "The single most useful number here. Weigh yourself at the same "
+                "time every day, ideally first thing, and read the seven-day "
+                "average rather than any individual reading.",
+    }] if bw_entries else []
+
     return {
         "schema": 3,
         "backlogImport": True,
@@ -308,7 +340,7 @@ def to_import(sessions: list[dict]) -> dict:
         # and must not carry programme state — the app decides that by recency,
         # but sending none at all removes the question entirely.
         "sessions": sorted(out, key=lambda x: x["date"]),
-        "metrics": {"defs": [], "entries": []},
+        "metrics": {"defs": bw_defs, "entries": bw_entries},
         "nutrition": {"targets": None, "log": [], "customFoods": []},
         "lab": {"customTests": [], "results": []},
         "customExercises": [], "customPrograms": [], "prs": {},
@@ -376,7 +408,13 @@ def main() -> None:
     cond = [s for s in payload["sessions"] if s["type"] == "conditioning"]
     total_sets = sum(len(e["sets"]) for s in lifts for e in s["entries"])
 
-    print(f"{len(lifts)} lifting sessions, {cond and len(cond) or 0} conditioning, {total_sets} work sets")
+    bw = payload["metrics"]["entries"]
+    print(f"{len(lifts)} lifting sessions, {cond and len(cond) or 0} conditioning, "
+          f"{total_sets} work sets, {len(bw)} bodyweight readings")
+    if bw:
+        lo = min(x["value"] for x in bw)
+        hi = max(x["value"] for x in bw)
+        print(f"bodyweight {lo:g}–{hi:g} kg")
     if payload["sessions"]:
         print(f"dates {payload['sessions'][0]['date']} .. {payload['sessions'][-1]['date']}")
 

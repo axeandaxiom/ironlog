@@ -173,6 +173,17 @@ export function importJSON(text, { mode = 'merge' } = {}) {
   cur.sessions = byId(cur.sessions, incoming.sessions).sort((a, b) => (a.date < b.date ? -1 : 1));
   cur.metrics.defs = byId(cur.metrics.defs, incoming.metrics.defs);
   cur.metrics.entries = byId(cur.metrics.entries, incoming.metrics.entries);
+  // Readings for a metric nobody has set up would otherwise import as data
+  // with nothing to display it. Give any orphan a definition so it charts.
+  const defined = new Set(cur.metrics.defs.map((d) => d.id));
+  for (const e of cur.metrics.entries) {
+    if (defined.has(e.metricId)) continue;
+    defined.add(e.metricId);
+    cur.metrics.defs.push({
+      id: e.metricId, label: e.metricId, unit: '', kind: 'number',
+      dp: 1, better: 'flat', recovered: true,
+    });
+  }
   cur.nutrition.log = byId(cur.nutrition.log, incoming.nutrition.log);
   cur.nutrition.customFoods = byId(cur.nutrition.customFoods, incoming.nutrition.customFoods);
   cur.lab.customTests = byId(cur.lab.customTests, incoming.lab.customTests);

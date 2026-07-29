@@ -31,6 +31,8 @@ const SUGGESTED = [
   { id: 'm-water', label: 'Water', unit: 'l', kind: 'number', dp: 1, better: 'up' },
 ];
 
+let healthRange = null;
+
 export function renderHealth(view, ctx) {
   const db = store.get();
   const defs = db.metrics.defs;
@@ -57,10 +59,43 @@ export function renderHealth(view, ctx) {
   view.append(today);
 
   // ---- charts
-  view.append(el('h2', {}, 'Trends'));
+  //
+  // The window used to be a hardcoded 180 days, which made an imported backlog
+  // invisible: four years of readings, none of them in the last six months,
+  // and a Health tab that looked empty. The range is now chosen, and it
+  // defaults to the shortest one that actually contains your data.
+  const RANGES = [
+    { key: '3m', label: '3 months', days: 92 },
+    { key: '1y', label: 'Year', days: 366 },
+    { key: 'all', label: 'All', days: 100000 },
+  ];
+  const oldest = db.metrics.entries.reduce((a, e) => (a && a < e.date ? a : e.date), null);
+  const spanDays = oldest ? Math.max(1, daysBetween(oldest, todayISO())) : 0;
+  if (!healthRange) {
+    healthRange = (RANGES.find((r) => r.days >= spanDays) || RANGES.at(-1)).key;
+  }
+  const range = RANGES.find((r) => r.key === healthRange) || RANGES[0];
+
+  view.append(el('div', { class: 'row between', style: { margin: '22px 0 8px' } },
+    el('h2', { style: { margin: 0 } }, 'Trends'),
+    el('div', { class: 'chips' }, RANGES.map((r) => {
+      const c = el('button', { class: 'chip', 'aria-pressed': String(r.key === range.key) }, r.label);
+      c.addEventListener('click', () => { healthRange = r.key; ctx.refresh(); });
+      return c;
+    }))));
+
   for (const def of defs) {
-    const pts = store.metricSeries(def.id, 180);
-    if (!pts.length) continue;
+    const pts = store.metricSeries(def.id, range.days);
+    if (!pts.length) {
+      const total = store.metricSeries(def.id, 100000).length;
+      if (total) {
+        view.append(el('div', { class: 'card tight' },
+          el('div', { class: 'li-title' }, def.label),
+          el('div', { class: 'li-sub' },
+            `${total} reading${total === 1 ? '' : 's'}, none in the last ${range.label.toLowerCase()}. Switch the range to see them.`)));
+      }
+      continue;
+    }
 
     const card = el('div', { class: 'card' },
       el('div', { class: 'card-head' },

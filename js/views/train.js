@@ -176,6 +176,8 @@ function renderPlan(view, ctx, db) {
     );
   }
 
+  view.append(bodyweightRow(ctx, db));
+
   view.append(
     el('h2', {}, 'Off-programme'),
     el('div', { class: 'btn-row' },
@@ -194,6 +196,54 @@ function renderPlan(view, ctx, db) {
   );
 
   renderRecent(view, db);
+}
+
+/**
+ * Bodyweight, logged where you actually are on a training day.
+ *
+ * It already lives under Health, but the moment you reliably have it is when
+ * you walk into the gym — and a number you have to go looking for is a number
+ * you stop recording.
+ */
+function bodyweightRow(ctx, db) {
+  const unit = 'kg';
+  const today = todayISO();
+  const existing = db.metrics.entries.find((e) => e.metricId === 'm-bw' && e.date === today);
+  const series = db.metrics.entries
+    .filter((e) => e.metricId === 'm-bw' && typeof e.value === 'number')
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  const last = series[0];
+
+  const inp = numInput({
+    value: existing != null ? String(existing.value) : '',
+    placeholder: last ? num(last.value, 1) : unit,
+  });
+  inp.addEventListener('change', () => {
+    const v = parseNum(inp);
+    if (Number.isNaN(v)) return;
+    if (v < 35 || v > 200) { toast('That does not look like a bodyweight', 'bad'); return; }
+    if (!db.metrics.defs.some((d) => d.id === 'm-bw')) {
+      store.update((d) => d.metrics.defs.push({
+        id: 'm-bw', label: 'Bodyweight', unit: 'kg', kind: 'number',
+        dp: 1, better: 'flat', core: true,
+      }));
+    }
+    store.addMetricEntry('m-bw', v);
+    toast(`Bodyweight ${num(v, 1)} kg`, 'good');
+    ctx.refresh();
+  });
+
+  return el('div', { class: 'card tight' },
+    el('div', { class: 'row', style: { gap: '10px' } },
+      el('div', { class: 'grow' },
+        el('div', { class: 'li-title' }, existing != null ? 'Bodyweight today' : 'Bodyweight'),
+        el('div', { class: 'li-sub' },
+          existing != null
+            ? `Logged ${num(existing.value, 1)} ${unit}`
+            : last
+              ? `Last ${num(last.value, 1)} ${unit} on ${last.date}`
+              : 'Not tracked yet — the most useful number in the app')),
+      el('div', { style: { width: '110px' } }, inp)));
 }
 
 function hasWeights(db) {
