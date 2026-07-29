@@ -1,0 +1,5138 @@
+{
+ "schema": 3,
+ "backlogImport": true,
+ "exportedAt": "2026-07-29T16:01:49Z",
+ "sessions": [
+  {
+   "id": "bl-2025-11-12-0",
+   "type": "lift",
+   "date": "2025-11-12",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-11-12-rdl",
+     "exerciseId": "rdl",
+     "prescribedSets": 1,
+     "prescribedReps": 2,
+     "sets": [
+      {
+       "weight": 155.0,
+       "reps": 2,
+       "note": "rest-pause 1+1",
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 65.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 115.0,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-11-13-1-c",
+   "type": "conditioning",
+   "date": "2025-11-13",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-shadow",
+   "durationMin": 0,
+   "rounds": null,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2025-11-14-2",
+   "type": "lift",
+   "date": "2025-11-14",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-11-14-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 6,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-11-14-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 6,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-11-14-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 6,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-11-15-3",
+   "type": "lift",
+   "date": "2025-11-15",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-11-15-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 110.0,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 110.0,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 110.0,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-11-15-bench",
+     "exerciseId": "bench",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 85.0,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 85.0,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 85.0,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 50.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.0,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-11-15-deadlift",
+     "exerciseId": "deadlift",
+     "prescribedSets": 1,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 140.0,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 85.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 110.0,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-11-16-4-c",
+   "type": "conditioning",
+   "date": "2025-11-16",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 36,
+   "rounds": 12,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2025-11-17-5",
+   "type": "lift",
+   "date": "2025-11-17",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-11-17-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 1,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 16.25,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-11-17-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 1,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 16.25,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-11-17-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 1,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 10.0,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-11-17-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 5,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-11-17-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 5,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 16.25,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-11-17-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 5,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 10.0,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-11-18-6",
+   "type": "lift",
+   "date": "2025-11-18",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-11-18-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 120.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 25.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.0,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 110.0,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-11-18-press",
+     "exerciseId": "press",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 70.0,
+       "reps": 5,
+       "note": "rest-pause 2+3",
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 50.0,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-11-18-rdl",
+     "exerciseId": "rdl",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 150.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 110.0,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 140.0,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-11-26-7",
+   "type": "lift",
+   "date": "2025-11-26",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-11-26-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 120.0,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.0,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.0,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.0,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 110.0,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-16-8",
+   "type": "lift",
+   "date": "2025-12-16",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-16-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 111.13,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 111.13,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 111.13,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-16-bench",
+     "exerciseId": "bench",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 88.45,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 88.45,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 88.45,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 79.38,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-16-deadlift",
+     "exerciseId": "deadlift",
+     "prescribedSets": 1,
+     "prescribedReps": 1,
+     "sets": [
+      {
+       "weight": 170.1,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 79.38,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-17-9",
+   "type": "lift",
+   "date": "2025-12-17",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-17-burpees",
+     "exerciseId": "burpees",
+     "prescribedSets": 3,
+     "prescribedReps": 40,
+     "sets": [
+      {
+       "weight": 0,
+       "reps": 40,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0,
+       "reps": 40,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0,
+       "reps": 40,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-18-10",
+   "type": "lift",
+   "date": "2025-12-18",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-18-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 9,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-18-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 1,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-18-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 1,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-18-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 5,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-18-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 5,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-18-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 5,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-19-11",
+   "type": "lift",
+   "date": "2025-12-19",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-19-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 113.4,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 113.4,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 113.4,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 18.14,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-19-press",
+     "exerciseId": "press",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 68.04,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 68.04,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 68.04,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 43.09,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-19-rdl",
+     "exerciseId": "rdl",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 149.69,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 81.65,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 108.86,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-20-12-c",
+   "type": "conditioning",
+   "date": "2025-12-20",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 36,
+   "rounds": 12,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2025-12-21-13",
+   "type": "lift",
+   "date": "2025-12-21",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-21-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 6,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-21-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 6,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-21-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 6,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-22-14",
+   "type": "lift",
+   "date": "2025-12-22",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-22-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 113.4,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 113.4,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 113.4,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-22-press",
+     "exerciseId": "press",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 70.31,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.31,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 70.31,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-22-rdl",
+     "exerciseId": "rdl",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 161.03,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 70.31,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-23-15-c",
+   "type": "conditioning",
+   "date": "2025-12-23",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 36,
+   "rounds": 12,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2025-12-24-16",
+   "type": "lift",
+   "date": "2025-12-24",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-24-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 1,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-24-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 1,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-24-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 1,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-25-17",
+   "type": "lift",
+   "date": "2025-12-25",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-25-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 115.67,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 115.67,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 115.67,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-25-press",
+     "exerciseId": "press",
+     "prescribedSets": 3,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 68.04,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 68.04,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 68.04,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 9.07,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 43.09,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-25-rdl",
+     "exerciseId": "rdl",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 154.22,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 68.04,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 108.86,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-26-18",
+   "type": "lift",
+   "date": "2025-12-26",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-26-burpees",
+     "exerciseId": "burpees",
+     "prescribedSets": 1,
+     "prescribedReps": 180,
+     "sets": [
+      {
+       "weight": 0,
+       "reps": 180,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-27-19",
+   "type": "lift",
+   "date": "2025-12-27",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-27-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 3,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-27-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 3,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-27-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 3,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-27-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-27-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-27-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-28-20",
+   "type": "lift",
+   "date": "2025-12-28",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-28-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 115.67,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 115.67,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 115.67,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2025-12-28-bench",
+     "exerciseId": "bench",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 88.45,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 88.45,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 88.45,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 83.91,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-29-21",
+   "type": "lift",
+   "date": "2025-12-29",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-29-burpees",
+     "exerciseId": "burpees",
+     "prescribedSets": 1,
+     "prescribedReps": 190,
+     "sets": [
+      {
+       "weight": 0,
+       "reps": 190,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-30-22",
+   "type": "lift",
+   "date": "2025-12-30",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-30-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 5,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-30-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 5,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-30-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 5,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-30-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 1,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-30-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 1,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2025-12-30-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 1,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2025-12-31-23",
+   "type": "lift",
+   "date": "2025-12-31",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2025-12-31-deadlift",
+     "exerciseId": "deadlift",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 156.49,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-01-24",
+   "type": "lift",
+   "date": "2026-01-01",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-01-burpees",
+     "exerciseId": "burpees",
+     "prescribedSets": 1,
+     "prescribedReps": 200,
+     "sets": [
+      {
+       "weight": 0,
+       "reps": 200,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-02-25",
+   "type": "lift",
+   "date": "2026-01-02",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-02-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 6,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-02-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 6,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-02-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 6,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-03-26",
+   "type": "lift",
+   "date": "2026-01-03",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-03-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 115.67,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 115.67,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 115.67,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-01-03-bench",
+     "exerciseId": "bench",
+     "prescribedSets": 3,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 88.45,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 88.45,
+       "reps": 8,
+       "note": "rest-pause 6+2",
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 88.45,
+       "reps": 7,
+       "note": "rest-pause 5+2",
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 83.91,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-01-03-deadlift",
+     "exerciseId": "deadlift",
+     "prescribedSets": 2,
+     "prescribedReps": 1,
+     "sets": [
+      {
+       "weight": 163.29,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 151.95,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 4,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-04-27-c",
+   "type": "conditioning",
+   "date": "2026-01-04",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "run-easy",
+   "durationMin": 0,
+   "rounds": null,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-01-05-28",
+   "type": "lift",
+   "date": "2026-01-05",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-05-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 2,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-05-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 2,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-05-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 2,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-05-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 4,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-05-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 4,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-05-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 4,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-06-29",
+   "type": "lift",
+   "date": "2026-01-06",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-06-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 117.93,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 117.93,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 117.93,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-01-06-press",
+     "exerciseId": "press",
+     "prescribedSets": 1,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 70.31,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-08-30",
+   "type": "lift",
+   "date": "2026-01-08",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-08-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 4,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-08-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 4,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-08-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 4,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-08-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 2,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-08-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 2,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-08-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 2,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-09-31",
+   "type": "lift",
+   "date": "2026-01-09",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-09-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 117.93,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 117.93,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 117.93,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-10-32-c",
+   "type": "conditioning",
+   "date": "2026-01-10",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "run-easy",
+   "durationMin": 0,
+   "rounds": null,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-01-11-33",
+   "type": "lift",
+   "date": "2026-01-11",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-11-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 8,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-11-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 8,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-11-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 8,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-13-34",
+   "type": "lift",
+   "date": "2026-01-13",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-13-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 120.2,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.2,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.2,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-01-13-press",
+     "exerciseId": "press",
+     "prescribedSets": 3,
+     "prescribedReps": 3,
+     "sets": [
+      {
+       "weight": 72.57,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 72.57,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 72.57,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-01-13-rdl",
+     "exerciseId": "rdl",
+     "prescribedSets": 3,
+     "prescribedReps": 4,
+     "sets": [
+      {
+       "weight": 142.88,
+       "reps": 4,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 2,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 72.57,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 4,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-14-35-c",
+   "type": "conditioning",
+   "date": "2026-01-14",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 0,
+   "rounds": null,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-01-15-36",
+   "type": "lift",
+   "date": "2026-01-15",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-15-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 1,
+     "prescribedReps": 15,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-15-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 1,
+     "prescribedReps": 12,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-15-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 4,
+     "prescribedReps": 10,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-15-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 6,
+     "prescribedReps": 15,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-15-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 6,
+     "prescribedReps": 9,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 9,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-16-37",
+   "type": "lift",
+   "date": "2026-01-16",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-16-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 120.2,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.2,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.2,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-17-38-c",
+   "type": "conditioning",
+   "date": "2026-01-17",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-shadow",
+   "durationMin": 0,
+   "rounds": null,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-01-18-39",
+   "type": "lift",
+   "date": "2026-01-18",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-18-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 6,
+     "prescribedReps": 15,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-18-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 6,
+     "prescribedReps": 15,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 15,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-18-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 6,
+     "prescribedReps": 10,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-19-40",
+   "type": "lift",
+   "date": "2026-01-19",
+   "label": "From paper log",
+   "notes": "RECONSTRUCTED light day, not read from the notebook. Weights are 70% of the previous session for each lift, rounded to loadable pounds. Reps copied from that reference session.",
+   "entries": [
+    {
+     "id": "bl-2026-01-19-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 83.91,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 83.91,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 83.91,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-19-bench",
+     "exerciseId": "bench",
+     "prescribedSets": 3,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 61.23,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-19-deadlift",
+     "exerciseId": "deadlift",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 108.86,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-20-41-c",
+   "type": "conditioning",
+   "date": "2026-01-20",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 36,
+   "rounds": 12,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-01-21-42",
+   "type": "lift",
+   "date": "2026-01-21",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-21-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 120.2,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.2,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 120.2,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-01-21-press",
+     "exerciseId": "press",
+     "prescribedSets": 1,
+     "prescribedReps": 6,
+     "sets": [
+      {
+       "weight": 61.23,
+       "reps": 6,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-22-43-c",
+   "type": "conditioning",
+   "date": "2026-01-22",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "run-easy",
+   "durationMin": 0,
+   "rounds": null,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-01-23-44",
+   "type": "lift",
+   "date": "2026-01-23",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-23-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 10,
+     "prescribedReps": 10,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-23-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 10,
+     "prescribedReps": 10,
+     "sets": [
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 0.0,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-01-23-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 10,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-24-45",
+   "type": "lift",
+   "date": "2026-01-24",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-01-24-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 122.47,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 122.47,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 122.47,
+       "reps": 4,
+       "note": "rest-pause 3+1, failed rep",
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-01-25-46-c",
+   "type": "conditioning",
+   "date": "2026-01-25",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 12,
+   "rounds": 4,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-02-02-47",
+   "type": "lift",
+   "date": "2026-02-02",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-02-02-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 127.01,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 127.01,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 127.01,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-02-02-press",
+     "exerciseId": "press",
+     "prescribedSets": 3,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 61.23,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 43.09,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-02-02-deadlift",
+     "exerciseId": "deadlift",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 161.03,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 142.88,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-02-03-48-c",
+   "type": "conditioning",
+   "date": "2026-02-03",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 36,
+   "rounds": 12,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-02-04-49",
+   "type": "lift",
+   "date": "2026-02-04",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-02-04-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 1,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-04-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 1,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-04-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 1,
+     "prescribedReps": 12,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-04-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 5,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-04-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 5,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-04-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 5,
+     "prescribedReps": 12,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-02-05-50",
+   "type": "lift",
+   "date": "2026-02-05",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-02-05-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 131.54,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 131.54,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 131.54,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-02-06-51-c",
+   "type": "conditioning",
+   "date": "2026-02-06",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 36,
+   "rounds": 12,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  },
+  {
+   "id": "bl-2026-02-07-52",
+   "type": "lift",
+   "date": "2026-02-07",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-02-07-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 2,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-07-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 2,
+     "prescribedReps": 8,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 8,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-07-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 2,
+     "prescribedReps": 12,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-07-chinup",
+     "exerciseId": "chinup",
+     "prescribedSets": 4,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-07-dip",
+     "exerciseId": "dip",
+     "prescribedSets": 4,
+     "prescribedReps": 7,
+     "sets": [
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 15.88,
+       "reps": 7,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    },
+    {
+     "id": "bl-2026-02-07-liu-raise",
+     "exerciseId": "liu-raise",
+     "prescribedSets": 4,
+     "prescribedReps": 12,
+     "sets": [
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 9.07,
+       "reps": 12,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": []
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-02-08-53",
+   "type": "lift",
+   "date": "2026-02-08",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-02-08-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 133.81,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 133.81,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 133.81,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-02-08-press",
+     "exerciseId": "press",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 65.77,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 65.77,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 65.77,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 43.09,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      }
+     ]
+    },
+    {
+     "id": "bl-2026-02-08-deadlift",
+     "exerciseId": "deadlift",
+     "prescribedSets": 1,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 163.29,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 61.23,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 147.42,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-02-11-54",
+   "type": "lift",
+   "date": "2026-02-11",
+   "label": "From paper log",
+   "notes": "Imported from notebook",
+   "entries": [
+    {
+     "id": "bl-2026-02-11-squat",
+     "exerciseId": "squat",
+     "prescribedSets": 3,
+     "prescribedReps": 5,
+     "sets": [
+      {
+       "weight": 136.08,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 136.08,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 136.08,
+       "reps": 5,
+       "done": true,
+       "ts": null
+      }
+     ],
+     "warmupSets": [
+      {
+       "weight": 20.41,
+       "reps": 10,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 61.23,
+       "reps": 3,
+       "done": true,
+       "ts": null
+      },
+      {
+       "weight": 102.06,
+       "reps": 1,
+       "done": true,
+       "ts": null
+      }
+     ]
+    }
+   ],
+   "durationSec": null
+  },
+  {
+   "id": "bl-2026-02-12-55-c",
+   "type": "conditioning",
+   "date": "2026-02-12",
+   "label": "Heavy Bag Intervals",
+   "sport": "boxing",
+   "conditioningId": "box-bag-int",
+   "durationMin": 36,
+   "rounds": 12,
+   "rpe": null,
+   "interference": "medium",
+   "notes": "From paper log",
+   "entries": []
+  }
+ ],
+ "metrics": {
+  "defs": [
+   {
+    "id": "m-bw",
+    "label": "Bodyweight",
+    "unit": "kg",
+    "kind": "number",
+    "dp": 1,
+    "better": "flat",
+    "core": true,
+    "note": "The single most useful number here. Weigh yourself at the same time every day, ideally first thing, and read the seven-day average rather than any individual reading."
+   }
+  ],
+  "entries": [
+   {
+    "id": "bl-bw-2025-11-14",
+    "metricId": "m-bw",
+    "date": "2025-11-14",
+    "value": 77.0,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2025-12-18",
+    "metricId": "m-bw",
+    "date": "2025-12-18",
+    "value": 76.66,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2025-12-21",
+    "metricId": "m-bw",
+    "date": "2025-12-21",
+    "value": 76.2,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2025-12-22",
+    "metricId": "m-bw",
+    "date": "2025-12-22",
+    "value": 77.11,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2025-12-24",
+    "metricId": "m-bw",
+    "date": "2025-12-24",
+    "value": 78.02,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2025-12-25",
+    "metricId": "m-bw",
+    "date": "2025-12-25",
+    "value": 77.11,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2025-12-28",
+    "metricId": "m-bw",
+    "date": "2025-12-28",
+    "value": 78.02,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2025-12-31",
+    "metricId": "m-bw",
+    "date": "2025-12-31",
+    "value": 78.02,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2026-01-02",
+    "metricId": "m-bw",
+    "date": "2026-01-02",
+    "value": 78.02,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2026-01-05",
+    "metricId": "m-bw",
+    "date": "2026-01-05",
+    "value": 78.93,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2026-01-06",
+    "metricId": "m-bw",
+    "date": "2026-01-06",
+    "value": 78.47,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2026-02-03",
+    "metricId": "m-bw",
+    "date": "2026-02-03",
+    "value": 78.02,
+    "note": "From paper log"
+   },
+   {
+    "id": "bl-bw-2026-02-13",
+    "metricId": "m-bw",
+    "date": "2026-02-13",
+    "value": 81.19,
+    "note": "From paper log"
+   }
+  ]
+ },
+ "nutrition": {
+  "targets": null,
+  "log": [],
+  "customFoods": []
+ },
+ "lab": {
+  "customTests": [],
+  "results": []
+ },
+ "customExercises": [],
+ "customPrograms": [],
+ "prs": {}
+}

@@ -327,7 +327,7 @@ async function advancePhase(ctx, db) {
 // Session start
 // ---------------------------------------------------------------------------
 
-function startSession(ctx, db, wk, date = todayISO()) {
+function startSession(ctx, db, wk, date = todayISO(), when = null) {
   const entries = wk.items.map((item) => (item.conditioning ? {
     id: uid(),
     exerciseId: item.exerciseId,
@@ -362,7 +362,9 @@ function startSession(ctx, db, wk, date = todayISO()) {
 
   store.update((d) => {
     d.activeSession = {
-      id: uid(), type: 'lift', date, startedAt: Date.now(),
+      id: uid(), type: 'lift', date,
+      startedAt: when?.startedAt ?? Date.now(),
+      fixedDurationSec: when?.durationSec ?? null,
       programId: wk.programId, phase: wk.phase, label: wk.label, cursor: wk.cursor,
       entries: [...entries, ...carried.entries],
       carriedFrom: carried.from, carriedLabel: carried.fromLabel,
@@ -376,14 +378,16 @@ function startSession(ctx, db, wk, date = todayISO()) {
   ctx.refresh();
 }
 
-function startFreeSession(ctx, db, date = todayISO()) {
+function startFreeSession(ctx, db, date = todayISO(), when = null) {
   // Nothing is programmed, so everything from last time carries — main lifts at
   // their current working weight, accessories at exactly what you used.
   const carried = carryForward(db, { label: 'Free session', items: [] });
 
   store.update((d) => {
     d.activeSession = {
-      id: uid(), type: 'free', date, startedAt: Date.now(),
+      id: uid(), type: 'free', date,
+      startedAt: when?.startedAt ?? Date.now(),
+      fixedDurationSec: when?.durationSec ?? null,
       label: 'Free session', entries: carried.entries,
       carriedFrom: carried.from, carriedLabel: carried.fromLabel,
       carriedSameSlot: carried.sameSlot, notes: '',
@@ -405,6 +409,23 @@ function startFreeSession(ctx, db, date = todayISO()) {
 function openBackdate(ctx, db) {
   sheet('Log a past session', (body, close) => {
     const dateInput = el('input', { type: 'date', value: todayISO(), max: todayISO() });
+    // 18:00 is a guess, but a wrong time is harmless and an empty one is not:
+    // without it the session would land at midnight and sort oddly against a
+    // real session logged the same day.
+    const timeInput = el('input', { type: 'time', value: '18:00' });
+    const durInput = numInput({ decimal: false, value: '60' });
+
+    // Epoch for the moment you say it started, plus how long it ran.
+    const when = () => {
+      const d = dateInput.value || todayISO();
+      const t = /^\d{2}:\d{2}$/.test(timeInput.value) ? timeInput.value : '18:00';
+      const started = new Date(`${d}T${t}`);
+      const mins = Math.round(parseNum(durInput));
+      return {
+        startedAt: Number.isNaN(started.getTime()) ? Date.now() : started.getTime(),
+        durationSec: Number.isFinite(mins) && mins > 0 ? mins * 60 : null,
+      };
+    };
 
     const newest = db.sessions.reduce((a, x) => (x.date > a ? x.date : a), '');
     const note = el('div', { class: 'note' });
@@ -425,7 +446,12 @@ function openBackdate(ctx, db) {
     dateInput.addEventListener('change', refreshNote);
     refreshNote();
 
-    body.append(el('div', { class: 'field' }, el('label', {}, 'Date'), dateInput), note);
+    body.append(
+      el('div', { class: 'field' }, el('label', {}, 'Date'), dateInput),
+      el('div', { class: 'grid2' },
+        el('div', { class: 'field' }, el('label', {}, 'Started at'), timeInput),
+        el('div', { class: 'field' }, el('label', {}, 'Duration (min)'), durInput)),
+      note);
 
     const days = rotationDays(db);
     if (days.length) {
@@ -437,8 +463,9 @@ function openBackdate(ctx, db) {
           // Build the prescription for that day without disturbing the cursor.
           const snapshot = { ...db, program: { ...db.program, cursor: d.index } };
           const wk = nextWorkout(snapshot);
+          const w = when();
           close();
-          startSession(ctx, db, wk, date);
+          startSession(ctx, db, wk, date, w);
         } },
           el('div', { class: 'grow' },
             el('div', { class: 'li-title' }, d.label),
@@ -451,11 +478,14 @@ function openBackdate(ctx, db) {
     body.append(
       el('button', { class: 'btn-block', style: { marginTop: '10px' }, onclick: () => {
         const date = dateInput.value || todayISO();
+        const w = when();
         close();
-        startFreeSession(ctx, db, date);
+        startFreeSession(ctx, db, date, w);
       } }, 'Blank session instead'),
       el('div', { class: 'note' },
-        'You can change the date again from inside the session if you get it wrong.')
+        'You can change the date again from inside the session if you get it wrong. '
+        + 'The duration is recorded as typed rather than timed, so finishing the '
+        + 'session hours later will not inflate it.')
     );
   });
 }
@@ -1104,7 +1134,12 @@ async function finishSession(ctx) {
     return;
   }
 
-  s.durationSec = Math.round((Date.now() - s.startedAt) / 1000);
+  // A session you logged after the fact carries the duration you typed. Only
+  // a session actually run in the app derives it from the wall clock, which for
+  // a backdated one would read as however many weeks ago it happened.
+  s.durationSec = s.fixedDurationSec != null
+    ? s.fixedDurationSec
+    : Math.round((Date.now() - s.startedAt) / 1000);
   // Drop sets that were never touched so the history reflects what happened.
   // Warm-ups are kept separately and an exercise survives on warm-ups alone —
   // if you only got through the ramp, that is still what occurred.

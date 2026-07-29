@@ -150,7 +150,13 @@ export function exportFilename() {
  * device you just trained on.
  */
 export function importJSON(text, { mode = 'merge' } = {}) {
-  const incoming = migrate(JSON.parse(text));
+  const raw = JSON.parse(text);
+  const incoming = migrate(raw);
+  // migrate() fills in a default programme for any file that lacks one, so
+  // `incoming.program` is never absent — only ever real or fabricated. Ask the
+  // raw file instead, or an import that carries no programme at all would hand
+  // over an empty one and wipe the working weights on this device.
+  const carriesProgram = Object.prototype.hasOwnProperty.call(raw, 'program');
   if (mode === 'replace') {
     db = incoming;
     save({ immediate: true });
@@ -201,7 +207,10 @@ export function importJSON(text, { mode = 'merge' } = {}) {
   //
   // The device that trained most recently is the one whose programme state is
   // current, whatever the volume of history behind it.
-  if (incomingNewest > localNewest) {
+  // A backlog of transcribed paper sessions is history by definition: it says
+  // what you did, never where you are now. It must not move the rotation or
+  // the working weights however recent its newest entry looks.
+  if (carriesProgram && !raw.backlogImport && incomingNewest > localNewest) {
     cur.program = incoming.program;
   }
   for (const [ex, pr] of Object.entries(incoming.prs || {})) {

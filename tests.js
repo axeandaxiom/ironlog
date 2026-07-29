@@ -1914,3 +1914,74 @@ group('Saved timer settings beat a programme prescription');
   const withOverride = { ...DEFAULT_BOXING, ...saved, restSec: 60 };
   ok(withOverride.restSec === 60, 'an explicit override still wins when passed');
 }
+
+group('Backdated sessions carry a stated time and duration');
+{
+  // A session logged after the fact must record the duration you typed. Timing
+  // it from the wall clock would report a February session as five months long.
+  const finish = (s) => (s.fixedDurationSec != null
+    ? s.fixedDurationSec
+    : Math.round((Date.now() - s.startedAt) / 1000));
+
+  const backdated = {
+    startedAt: new Date('2026-02-11T18:00').getTime(),
+    fixedDurationSec: 75 * 60,
+  };
+  ok(finish(backdated) === 4500, 'a stated 75 min is recorded as 75 min',
+     String(finish(backdated) / 60));
+
+  const live = { startedAt: Date.now() - 30 * 60 * 1000, fixedDurationSec: null };
+  const mins = finish(live) / 60;
+  ok(mins > 29 && mins < 31, 'a live session still times itself', String(mins));
+
+  // The start time has to survive into the stored session, or two sessions on
+  // the same date sort arbitrarily.
+  const t = new Date('2026-02-11T06:30').getTime();
+  ok(new Date(t).getHours() === 6 && new Date(t).getMinutes() === 30,
+     'an early-morning start time round-trips');
+
+  // Zero or blank duration must fall back to timing rather than record zero.
+  const blank = { startedAt: Date.now() - 60000, fixedDurationSec: null };
+  ok(finish(blank) > 0, 'a blank duration does not record a zero-length session');
+}
+
+group('A backlog import is history, never programme state');
+{
+  // Regression. importJSON ran migrate() on the incoming file first, and
+  // migrate() invents a default programme for any file that lacks one. The
+  // backlog file carries no programme at all, so "is the incoming file more
+  // recent?" handed over a fabricated empty one and emptied the working
+  // weights on the device. Ask the raw file whether it carries a programme.
+  const before = store.get();
+  const keptCursor = 2;
+  store.update((d) => {
+    d.sessions = [];
+    d.program.cursor = keptCursor;
+    d.program.working = { 'lowbar-squat': 137.5 };
+  }, { immediate: true });
+
+  const file = JSON.stringify({
+    schema: before.schema ?? 1,
+    backlogImport: true,
+    sessions: [{ id: 'bl-test-1', date: '2099-01-01', type: 'lift', entries: [], durationSec: 3600 }],
+    metrics: { defs: [], entries: [] },
+    nutrition: { log: [], customFoods: [] },
+    lab: { customTests: [], results: [] },
+    customExercises: [], customPrograms: [], prs: {},
+  });
+
+  store.importJSON(file, { mode: 'merge' });
+  const after = store.get();
+  ok(after.program.cursor === keptCursor,
+     'a programme-less import leaves the rotation alone', String(after.program.cursor));
+  ok(after.program.working['lowbar-squat'] === 137.5,
+     'and leaves the working weights alone',
+     JSON.stringify(after.program.working));
+  ok(after.sessions.some((s) => s.id === 'bl-test-1'),
+     'while still importing the session itself');
+
+  // Importing the same file twice must not duplicate: ids are deterministic.
+  const n = after.sessions.length;
+  store.importJSON(file, { mode: 'merge' });
+  ok(store.get().sessions.length === n, 'importing twice adds nothing the second time');
+}
