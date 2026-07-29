@@ -60,7 +60,9 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
       } else if (name === 'warn') {
         if (cfg.sound) warnBeep(2, 760);
         if (cfg.vibrate) buzz([90, 60, 90]);
-        toast(`${cfg.inRoundWarnSec} seconds left in the round`);
+        toast(cfg.inRoundWarnMode === 'interval'
+          ? `${cfg.inRoundWarnSec} s mark`
+          : `${cfg.inRoundWarnSec} seconds left in the round`);
       } else if (name === 'endwarn') {
         if (cfg.sound) warnBeep(3, 980);
         if (cfg.vibrate) buzz([60, 40, 60, 40, 60]);
@@ -105,7 +107,9 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
     const controls = el('div', { class: 'btn-row', style: { marginTop: '10px' } },
       el('button', { onclick: () => { timer.skip(); } }, 'Skip'),
       el('button', { onclick: () => { timer.stop(); timer.reset(); lastTickSec = null; } }, 'Reset'),
-      el('button', { onclick: () => { close(); openRoundSettings(ctx, () => openRoundTimer(ctx, { rounds, roundSec, restSec, onDone })); } }, 'Settings'));
+      // Reopened without the programme's rounds/length/rest overrides: you have
+      // just set those by hand, and a prescription must not overwrite a choice.
+      el('button', { onclick: () => { close(); openRoundSettings(ctx, () => openRoundTimer(ctx, { onDone })); } }, 'Settings'));
 
     body.append(
       el('div', { class: 'round-wrap' },
@@ -113,10 +117,8 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
       startBtn,
       audioWarn,
       controls,
-      el('div', { class: 'note' },
-        `${cfg.rounds} × ${fmtClock(cfg.roundSec)} with ${fmtClock(cfg.restSec)} rest. `
-        + `Warning at ${cfg.inRoundWarnSec} s left, again at ${cfg.endWarnSec} s, and ${cfg.restWarnSec} s before the next round. `
-        + 'The clock reads from the system time on every frame, so it stays right even if the screen sleeps or you switch apps.'),
+      el('div', { class: 'note' }, describeConfig(cfg)
+        + ' The clock reads from the system time on every tick, so it stays right even if the screen sleeps or you switch apps.'),
       el('button', { class: 'btn-block', style: { marginTop: '6px' }, onclick: () => {
         const s = timer.state;
         timer.stop();
@@ -145,6 +147,54 @@ export function openRoundSettings(ctx, after) {
         help ? el('div', { class: 'li-sub' }, help) : null);
     };
 
+    // The in-round warning reads its number two different ways, so the mode
+    // sits directly above the number and the help text below says which.
+    let warnMode = cfg.inRoundWarnMode === 'interval' ? 'interval' : 'before-end';
+    const warnHelp = el('div', { class: 'li-sub' });
+    const sayWarn = () => {
+      const n = Math.round(parseNum(f.inRoundWarnSec));
+      const secs = Number.isNaN(n) ? cfg.inRoundWarnSec : n;
+      warnHelp.textContent = !(secs > 0)
+        ? 'Off — no in-round warning.'
+        : warnMode === 'interval'
+          ? `Two beeps every ${secs} s from the start of the round, so a 3:00 round calls out at `
+            + markList(secs, cfg.roundSec) + '. Set to 0 to turn it off.'
+          : `Two beeps once, ${secs} s before the bell — the clapper. Set to 0 to turn it off.`;
+    };
+    const warnModeField = () => {
+      const fld = field('inRoundWarnSec', 'In-round warning (s)');
+      f.inRoundWarnSec.addEventListener('input', sayWarn);
+      const chips = el('div', { class: 'btn-row', style: { marginBottom: '6px' } });
+      const opts = [['before-end', 'Before the bell'], ['interval', 'Every X seconds']];
+      const btns = opts.map(([v, label]) => {
+        const b = el('button', { class: 'chip', 'aria-pressed': String(warnMode === v) }, label);
+        b.addEventListener('click', () => {
+          warnMode = v;
+          btns.forEach((o, i) => o.setAttribute('aria-pressed', String(opts[i][0] === v)));
+          sayWarn();
+        });
+        return b;
+      });
+      chips.append(...btns);
+      fld.insertBefore(chips, f.inRoundWarnSec);
+      fld.append(warnHelp);
+      sayWarn();
+      return fld;
+    };
+
+    // A test that says nothing is indistinguishable from a test that failed,
+    // so both buttons report what the audio device actually did.
+    const diag = el('div', { class: 'li-sub', style: { marginTop: '6px' } });
+    const testTone = async (label, play) => {
+      const ok = await primeAudio();
+      play();
+      const a = audioState();
+      diag.textContent = `${label}: context ${a.state}, session ${a.sessionType}.`
+        + (ok ? ' If you heard nothing, the ringer switch or volume is the cause.'
+              : ' The browser refused to start audio.');
+      toast(ok ? `${label} played` : 'Audio could not start', ok ? 'good' : 'bad');
+    };
+
     body.append(
       el('div', { class: 'grid2' },
         field('rounds', 'Rounds'),
@@ -153,8 +203,7 @@ export function openRoundSettings(ctx, after) {
         field('restSec', 'Rest between rounds (s)'),
         field('prepSec', 'Lead-in before round 1 (s)')),
       el('h3', {}, 'Warnings'),
-      field('inRoundWarnSec', 'In-round warning (s before the bell)',
-        'The clapper. Two beeps. Set to 0 to turn it off.'),
+      warnModeField(),
       field('endWarnSec', 'Round-end warning (s before the bell)',
         'Three sharper beeps right before the round ends.'),
       field('restWarnSec', 'Seconds out (s before the rest ends)',
@@ -164,23 +213,26 @@ export function openRoundSettings(ctx, after) {
       el('div', { class: 'note' },
         'The last five seconds of every phase tick audibly regardless, so you always know where you are without looking.'),
       el('div', { class: 'btn-row', style: { marginTop: '12px' } },
-        el('button', { onclick: async () => {
-          const ok = await primeAudio();
-          bell(1);
-          toast(ok ? 'Bell played — if you heard nothing, check the ringer switch' : 'Audio could not start', ok ? 'good' : 'bad');
-        } }, 'Test bell'),
-        el('button', { onclick: async () => { await primeAudio(); warnBeep(2, 760); } }, 'Test warning')),
+        el('button', { onclick: () => testTone('Bell', () => bell(1)) }, 'Test bell'),
+        el('button', { onclick: () => testTone('Warning', () => warnBeep(2, 760)) }, 'Test warning')),
+      diag,
       audioNote(),
       el('button', { class: 'btn-primary btn-block', style: { marginTop: '12px' }, onclick: () => {
-        const next = { ...cfg };
+        const next = { ...cfg, inRoundWarnMode: warnMode };
         for (const [k, inp] of Object.entries(f)) {
           const v = Math.round(parseNum(inp));
           if (!Number.isNaN(v) && v >= 0) next[k] = v;
         }
         if (!(next.rounds > 0)) { toast('At least one round', 'bad'); return; }
         if (!(next.roundSec > 0)) { toast('Rounds need a length', 'bad'); return; }
-        if (next.inRoundWarnSec >= next.roundSec || next.endWarnSec >= next.roundSec) {
-          toast('A warning has to fall inside the round', 'bad'); return;
+        if (next.endWarnSec >= next.roundSec) {
+          toast('The round-end warning has to fall inside the round', 'bad'); return;
+        }
+        if (next.inRoundWarnSec >= next.roundSec) {
+          toast(warnMode === 'interval'
+            ? 'An interval that long never comes round inside a round'
+            : 'The in-round warning has to fall inside the round', 'bad');
+          return;
         }
         store.update((d) => { d.settings.boxing = next; });
         close();
@@ -190,6 +242,25 @@ export function openRoundSettings(ctx, after) {
       } }, 'Save')
     );
   });
+}
+
+/** The marks an interval warning lands on, as a readable list. */
+function markList(every, roundSec) {
+  const out = [];
+  for (let t = every; t < roundSec && out.length < 6; t += every) out.push(fmtClock(t));
+  if (!out.length) return 'nowhere inside the round';
+  const more = every * (out.length + 1) < roundSec ? ', …' : '';
+  return out.join(', ') + more;
+}
+
+/** One sentence describing exactly what this timer will do. */
+export function describeConfig(cfg) {
+  const warn = !(cfg.inRoundWarnSec > 0) ? 'No in-round warning.'
+    : cfg.inRoundWarnMode === 'interval'
+      ? `Warning every ${cfg.inRoundWarnSec} s from the start of the round (${markList(cfg.inRoundWarnSec, cfg.roundSec)}).`
+      : `Warning at ${cfg.inRoundWarnSec} s left.`;
+  return `${cfg.rounds} × ${fmtClock(cfg.roundSec)} with ${fmtClock(cfg.restSec)} rest. `
+    + `${warn} Round-end warning at ${cfg.endWarnSec} s, and ${cfg.restWarnSec} s before the next round.`;
 }
 
 /** Say plainly what will and will not make a noise on this device. */

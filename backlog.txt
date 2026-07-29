@@ -305,3 +305,22 @@ WS 7x265 x3
 PRESS
 WU 10x45, 1x135
 WS 6x135
+
+# --- continues from IMG_1039 (overlaps 19–21.1 already above) --------------
+
+22.1.26
+RUN 55
+
+23.1.26
+CHIN 10x10+BW
+DIP 10x10+BW
+LIU 10x7+20
+
+24.1.26
+SQUAT
+WU 10x45, 5x135, 1x225
+WS 5x270, 5x270, ?x270
+# Third set reads "3+1+F x270" — F for failure? Please confirm the notation.
+
+25.1.26
+BAG 4x3

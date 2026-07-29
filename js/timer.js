@@ -19,6 +19,11 @@ export const DEFAULT_BOXING = {
   // Seconds before the end of the round for the first warning — the clapper
   // most gyms give you at the 30-second mark.
   inRoundWarnSec: 30,
+  // 'before-end' reads inRoundWarnSec as seconds before the bell and fires
+  // once. 'interval' reads it as a period and fires every that-many seconds
+  // from the start of the round — a change-of-technique call rather than a
+  // clapper. The bell owns the last moment either way.
+  inRoundWarnMode: 'before-end',
   // Second warning, right before the bell.
   endWarnSec: 10,
   // Warning before the rest ends, so you are back on the bag for the bell.
@@ -44,6 +49,7 @@ export class RoundTimer {
     this.phaseStart = 0;
     this.elapsedInPhase = 0;
     this._fired = new Set();
+    this._warnMark = 0;
     this._iv = null;
     this._emitTick();
   }
@@ -155,11 +161,22 @@ export class RoundTimer {
     if (this.phase === 'work') {
       // Warnings fire once each, and only when they are actually inside the
       // round — a 30-second warning on a 20-second round would be noise.
-      const { inRoundWarnSec, endWarnSec } = this.cfg;
-      if (inRoundWarnSec > 0 && inRoundWarnSec < this.cfg.roundSec
-          && left <= inRoundWarnSec && !this._fired.has('warn')) {
-        this._fired.add('warn');
-        this._emit('warn');
+      const { inRoundWarnSec, endWarnSec, inRoundWarnMode } = this.cfg;
+      if (inRoundWarnSec > 0 && inRoundWarnSec < this.cfg.roundSec) {
+        if (inRoundWarnMode === 'interval') {
+          // Count marks from the start of the round rather than a single
+          // trigger near the end. If the phone was asleep across several
+          // marks we fire once on waking, not a burst of catch-up beeps.
+          const mark = Math.floor((this.cfg.roundSec - left) / inRoundWarnSec + 1e-6);
+          // Skip a mark that lands on the bell — the bell already says that.
+          if (mark > this._warnMark && left > 0.75) {
+            this._warnMark = mark;
+            this._emit('warn');
+          }
+        } else if (left <= inRoundWarnSec && !this._fired.has('warn')) {
+          this._fired.add('warn');
+          this._emit('warn');
+        }
       }
       if (endWarnSec > 0 && endWarnSec < this.cfg.roundSec
           && left <= endWarnSec && !this._fired.has('endwarn')) {
@@ -191,6 +208,7 @@ export class RoundTimer {
     // every catch-up step would silently add a fraction of a second.
     const over = Math.max(0, this._elapsed() - this.phaseLength);
     this._fired.clear();
+    this._warnMark = 0;
     this.elapsedInPhase = over;
     this.phaseStart = Date.now();
 
@@ -259,10 +277,13 @@ let keepAlive = null;
  */
 export async function primeAudio() {
   try {
-    ctx ||= new (window.AudioContext || window.webkitAudioContext)();
+    // Order matters: the audio session category is fixed when the context is
+    // constructed, so asking for "playback" afterwards leaves an already-built
+    // context in the ambient category that the ringer switch mutes.
     try {
       if (navigator.audioSession) navigator.audioSession.type = 'playback';
     } catch { /* not supported; the ringer switch will win */ }
+    ctx ||= new (window.AudioContext || window.webkitAudioContext)();
     if (ctx.state === 'suspended') await ctx.resume();
     startKeepAlive();
     return ctx.state === 'running';
@@ -296,6 +317,11 @@ export function audioState() {
   return {
     started: !!ctx,
     running: ctx?.state === 'running',
+    // Surfaced in the settings sheet so a silent phone can be diagnosed from
+    // what the device actually reports rather than guessed at.
+    state: ctx ? ctx.state : 'not created',
+    sessionType: (typeof navigator !== 'undefined' && navigator.audioSession)
+      ? (navigator.audioSession.type || 'unset') : 'unavailable',
     // Below iOS 16.4 the ringer switch mutes Web Audio and nothing can change it.
     canBeatSilentSwitch: typeof navigator !== 'undefined' && !!navigator.audioSession,
     // Vibration is not implemented in Safari on iOS at all.

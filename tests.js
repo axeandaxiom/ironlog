@@ -1811,3 +1811,106 @@ const s = document.getElementById('summary');
 s.textContent = `${pass} passed, ${fail} failed`;
 s.className = fail ? 'fail' : 'pass';
 window.__results = { pass, fail };
+
+group('In-round warning — "every X seconds" mode');
+{
+  const drive = (cfg, seconds) => {
+    const t = new RoundTimer(cfg);
+    const warnAt = [];
+    let now = 1_000_000;
+    const origNow = Date.now;
+    Date.now = () => now;
+    try {
+      t.onEvent = (n) => { if (n === 'warn') warnAt.push(Math.round(cfg.roundSec - t.remaining)); };
+      t.start();
+      for (let s = 0; s < seconds; s++) { now += 1000; t._check(); }
+    } finally { Date.now = origNow; }
+    return { t, warnAt };
+  };
+
+  const base = { rounds: 3, roundSec: 180, restSec: 60, prepSec: 0,
+                 endWarnSec: 0, restWarnSec: 0 };
+
+  const iv = drive({ ...base, inRoundWarnSec: 30, inRoundWarnMode: 'interval' }, 179);
+  ok(iv.warnAt.join(',') === '30,60,90,120,150',
+     'fires at every 30 s mark from the start of the round', iv.warnAt.join(','));
+  ok(!iv.warnAt.includes(180), 'never on the bell itself — the bell says that');
+
+  // Sub-second ticking must not double-fire a mark.
+  {
+    const t = new RoundTimer({ ...base, inRoundWarnSec: 60, inRoundWarnMode: 'interval' });
+    let n = 0, now = 2_000_000;
+    const origNow = Date.now;
+    Date.now = () => now;
+    try {
+      t.onEvent = (e) => { if (e === 'warn') n++; };
+      t.start();
+      for (let ms = 0; ms <= 70000; ms += 200) { now += 200; t._check(); }
+    } finally { Date.now = origNow; }
+    ok(n === 1, 'one beep per mark, not one per 200 ms tick', String(n));
+  }
+
+  // Waking after several marks passed must not fire a burst.
+  {
+    const t = new RoundTimer({ ...base, roundSec: 300, inRoundWarnSec: 30, inRoundWarnMode: 'interval' });
+    let n = 0, now = 3_000_000;
+    const origNow = Date.now;
+    Date.now = () => now;
+    try {
+      t.onEvent = (e) => { if (e === 'warn') n++; };
+      t.start();
+      now += 150000;                     // pocket for two and a half minutes
+      t._check();
+    } finally { Date.now = origNow; }
+    ok(n === 1, 'catching up across five marks beeps once', String(n));
+  }
+
+  // The mark counter has to reset, or round 2 would never warn.
+  {
+    const t = new RoundTimer({ rounds: 3, roundSec: 60, restSec: 10, prepSec: 0,
+                               endWarnSec: 0, restWarnSec: 0,
+                               inRoundWarnSec: 20, inRoundWarnMode: 'interval' });
+    const perRound = [];
+    let cur = 0, now = 4_000_000;
+    const origNow = Date.now;
+    Date.now = () => now;
+    try {
+      t.onEvent = (e) => {
+        if (e === 'warn') cur++;
+        if (e === 'bell') { perRound.push(cur); cur = 0; }
+      };
+      t.start();
+      for (let s = 0; s < 150; s++) { now += 1000; t._check(); }
+    } finally { Date.now = origNow; }
+    ok(perRound.length >= 2 && perRound[1] >= 2,
+       'round 2 warns again after the counter resets', JSON.stringify(perRound));
+  }
+
+  const be = drive({ ...base, inRoundWarnSec: 30, inRoundWarnMode: 'before-end' }, 179);
+  ok(be.warnAt.length === 1 && be.warnAt[0] === 150,
+     'before-end mode still fires once, at 30 s left', be.warnAt.join(','));
+
+  const off = drive({ ...base, inRoundWarnSec: 0, inRoundWarnMode: 'interval' }, 179);
+  ok(off.warnAt.length === 0, 'zero turns the interval warning off');
+
+  const tooLong = drive({ ...base, inRoundWarnSec: 200, inRoundWarnMode: 'interval' }, 179);
+  ok(tooLong.warnAt.length === 0, 'an interval longer than the round never fires');
+
+  ok(DEFAULT_BOXING.inRoundWarnMode === 'before-end',
+     'the default is still the gym clapper, so nothing changes unasked');
+}
+
+group('Saved timer settings beat a programme prescription');
+{
+  // Day 3 of the four-day prescribes 12 x 3:00 with 60 s rest. Once you have
+  // opened the settings sheet and saved, your numbers must survive reopening.
+  const saved = { ...DEFAULT_BOXING, restSec: 20, inRoundWarnSec: 60, inRoundWarnMode: 'interval' };
+  const reopened = { ...DEFAULT_BOXING, ...saved };
+  ok(reopened.restSec === 20, 'hand-set rest survives', String(reopened.restSec));
+  ok(reopened.inRoundWarnSec === 60, 'hand-set warning survives', String(reopened.inRoundWarnSec));
+  ok(reopened.inRoundWarnMode === 'interval', 'hand-set mode survives');
+
+  // And the old behaviour, for contrast: an override wins when one is passed.
+  const withOverride = { ...DEFAULT_BOXING, ...saved, restSec: 60 };
+  ok(withOverride.restSec === 60, 'an explicit override still wins when passed');
+}
