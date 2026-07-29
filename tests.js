@@ -1005,6 +1005,70 @@ group('Programme slots: percentage, added weight, prescribed weight');
   registerCustomPrograms([]);
 }
 
+group('Every exercise remembers its own weight');
+{
+  // The gap this covers: a main lift has a progression to carry its number,
+  // but an accessory inside a programme had nothing, so it reset to zero
+  // every single session.
+  registerCustomPrograms([{
+    id: 'p-mem', name: 'Memory', source: 'Your own', custom: true,
+    frequency: '', blurb: '',
+    phases: { 1: { name: 'S', note: '', advanceWhen: '', rotation: [
+      { label: 'D', items: [
+        { ex: 'squat', sets: 3, reps: 5 },
+        { ex: 'chinup', sets: 3, reps: 5 },
+        { ex: 'liu-raise', sets: 3, reps: 15, weight: 6 },
+        { ex: 'db-row', sets: 3, reps: 10 },
+      ] } ] } },
+  }]);
+  const db = freshDB();
+  db.program.id = 'p-mem';
+  db.program.working.chinup = 20;
+
+  // First time out: the programme's own number seeds the accessory, and one
+  // with no stated weight simply has none yet.
+  let wk = nextWorkout(db);
+  ok(wk.items[2].weight === 6, 'an accessory is seeded from the programme', String(wk.items[2].weight));
+  ok(wk.items[3].weight === null, 'and one with no stated weight starts blank');
+
+  // Now log a session where the accessories were done at your own weights.
+  db.sessions.push({
+    id: 'x1', date: '2026-07-28', type: 'lift', programId: 'p-mem', label: 'D',
+    entries: [
+      { exerciseId: 'squat', sets: [{ weight: 100, reps: 5, done: true }] },
+      { exerciseId: 'chinup', sets: [{ weight: 20, reps: 5, done: true }] },
+      { exerciseId: 'liu-raise', assistance: true, sets: [{ weight: 8, reps: 15, done: true }] },
+      { exerciseId: 'db-row', assistance: true, sets: [{ weight: 32.5, reps: 10, done: true }] },
+    ],
+  });
+
+  wk = nextWorkout(db);
+  ok(wk.items[2].weight === 8,
+     'what you actually used beats the weight written into the programme',
+     String(wk.items[2].weight));
+  ok(wk.items[3].weight === 32.5,
+     'and an accessory with no programmed weight remembers yours',
+     String(wk.items[3].weight));
+  ok(wk.items[2].lastUsed?.date === '2026-07-28',
+     'the source of the number is reported alongside it');
+
+  // Each movement is independent — no bleed between them.
+  db.sessions.push({
+    id: 'x2', date: '2026-07-30', type: 'lift', programId: 'p-mem', label: 'D',
+    entries: [{ exerciseId: 'db-row', assistance: true, sets: [{ weight: 35, reps: 10, done: true }] }],
+  });
+  wk = nextWorkout(db);
+  ok(wk.items[3].weight === 35 && wk.items[2].weight === 8,
+     'updating one accessory leaves the others where they were',
+     JSON.stringify([wk.items[2].weight, wk.items[3].weight]));
+
+  // Reps stay the programme's business — it prescribes them, the log does not.
+  ok(wk.items[2].reps === 15 && wk.items[3].reps === 10,
+     'reps still come from the programme, not from what you happened to do');
+
+  registerCustomPrograms([]);
+}
+
 group('The four-day preset');
 {
   const p = PROGRAMS['tv-4day'];

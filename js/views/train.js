@@ -746,18 +746,29 @@ function openAddAssistance(ctx, db) {
       list.replaceChildren();
       ASSISTANCE.filter((a) => (equip === 'all' ? true : a.equip === equip)).forEach((a) => {
         list.append(el('button', { class: 'list-item', onclick: () => {
+          // Start from whatever you last used for this movement, sets and reps
+          // included — an accessory has no progression to fall back on.
+          const prev = lastLogged(db, a.id);
+          const sets = prev?.sets || 3;
+          const reps = prev?.reps || 10;
+          const weight = prev?.weight || 0;
           store.update((d) => {
             d.activeSession.entries.push({
-              id: uid(), exerciseId: a.id, prescribedSets: 3, prescribedReps: 10,
+              id: uid(), exerciseId: a.id, prescribedSets: sets, prescribedReps: reps,
               assistance: true, derived: true, warmup: [], warmupSets: [],
-              sets: Array.from({ length: 3 }, () => ({ weight: 0, reps: 10, done: false, ts: null })),
+              sets: Array.from({ length: sets }, () => ({ weight, reps, done: false, ts: null })),
             });
           });
           close(); ctx.refresh();
         } },
           el('div', { class: 'grow' },
             el('div', { class: 'li-title' }, a.name),
-            el('div', { class: 'li-sub' }, `${a.target} · ${a.sets}`),
+            el('div', { class: 'li-sub' }, (() => {
+              const prev = lastLogged(db, a.id);
+              return prev
+                ? `Last: ${prev.weight > 0 ? `${num(toDisplayWeight(prev.weight, db.settings.units))} ${db.settings.units} × ` : ''}${prev.reps} on ${prev.date}`
+                : `${a.target} · ${a.sets}`;
+            })()),
             a.note && el('div', { class: 'li-sub dim' }, a.note)),
           el('span', { class: 'li-right' }, '+')
         ));

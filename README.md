@@ -39,7 +39,7 @@ certificate, which removes the warning and the LAN requirement entirely.
 open http://localhost:8765/tests.html
 ```
 
-272 assertions covering the progression engine, plate and warm-up maths,
+279 assertions covering the progression engine, plate and warm-up maths,
 warm-up isolation, carry-forward ownership rules, custom exercises and
 programmes, the round timer (including background catch-up), attachment
 storage, nutrition calculations,
@@ -90,6 +90,12 @@ own warm-up ladder (higher reps, since it doubles as the hamstring warm-up),
 its own increment and its own working weight. It is not part of the Starting
 Strength rotation, because Rippetoe does not program it there; add it to any
 session with **+ Lift** and it progresses like everything else.
+
+**Every exercise remembers its own weight, individually.** A main lift is
+carried by its progression. An accessory has no progression to carry it, so the
+log does: whatever you last used comes back next time, per movement. A weight
+written into a programme only seeds a movement the first time — after that your
+own history governs it. Reps stay the programme's business.
 
 **A free session counts.** Work logged off-programme still moves your weights
 on and still starts from last time — it is real work, and the log is the source

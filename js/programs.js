@@ -350,11 +350,18 @@ export function nextWorkout(db) {
 
     const lift = MAIN_LIFTS[exId];
     if (!lift) {
-      // Programmed assistance. There is no progression behind it, so whatever
-      // weight the programme specifies is simply what it prescribes each time.
+      // Programmed assistance. There is no progression to own the number, so
+      // the log does: whatever you last used is what comes back. The weight in
+      // the programme is only a seed for the first time you ever do it.
+      //
+      // Without this an accessory resets to nothing every session, which is
+      // the one place in the app where your own history was being ignored.
+      const prev = lastLogged(db, exId);
       return {
         exerciseId: exId, sets: item.sets, reps: item.reps,
-        weight: item.weight ?? null, assistance: true, warmup: [],
+        weight: (prev && prev.weight > 0 ? prev.weight : item.weight) ?? null,
+        lastUsed: prev || null,
+        assistance: true, warmup: [],
       };
     }
 
