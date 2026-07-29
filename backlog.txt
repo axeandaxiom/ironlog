@@ -354,8 +354,8 @@ LIU 5x12+20
 5.2.26
 SQUAT
 WU 10x45, 3x135, 1x225
-WS 5x290, ?x290, 5x290
-# Middle work set sits under the binder ring. The two outer sets are clear.
+WS 5x290 x3
+# Middle set was under the binder ring; TV confirmed it matches the last one.
 # There is a BENCH block in this column too (WU 10x45, 3x135, 1x185) whose
 # work sets I cannot separate from the neighbouring column — see Q9.
 

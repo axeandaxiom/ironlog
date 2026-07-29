@@ -54,8 +54,8 @@ The unit markers in `backlog.txt` are correct and the import is unblocked.
 
 ## Batch 2 — IMG_1041 (Feb 2026)
 
-**Q8.** 05.02.26 squat, middle work set: hidden under a binder ring. The outer
-two are `5×290`. Was the middle one also `5×290`?
+**Q8. ANSWERED 29.07.26** — "same as the last one", so `5×290`×3. Recorded.
+This was the last unreadable cell in the file.
 
 **Q9.** 05.02.26 also has a bench block — warm-up `10×45, 3×135, 1×185` is
 clear, but its work sets run into the next column and I can't tell which
