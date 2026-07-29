@@ -324,3 +324,48 @@ WS 5x270, 5x270, ?x270
 
 25.1.26
 BAG 4x3
+
+# --- batch 2: IMG_1041 (Feb 2026) ------------------------------------------
+# Read from a rotated, contrast-boosted crop rather than the raw photo, which
+# is why these are more confident than batch 1's marginal cells.
+
+2.2.26
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 5x280 x3
+PRESS
+WU 10x45, 3x95
+WS 7x135 x3
+DEADLIFT
+WU 5x135, 3x225, 1x315
+WS 5x355
+
+3.2.26 172
+BAG 12x3
+
+4.2.26
+CHIN 1x8+35
+DIP 1x8+35
+LIU 1x12+20
+CHIN 5x7+35
+DIP 5x7+35
+LIU 5x12+20
+
+5.2.26
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 5x290, ?x290, 5x290
+# Middle work set sits under the binder ring. The two outer sets are clear.
+# There is a BENCH block in this column too (WU 10x45, 3x135, 1x185) whose
+# work sets I cannot separate from the neighbouring column — see Q9.
+
+6.2.26
+BAG 12x3
+
+7.2.26
+CHIN 2x8+35
+DIP 2x8+35
+LIU 2x12+20
+CHIN 4x7+35
+DIP 4x7+35
+LIU 4x12+20
