@@ -4,6 +4,8 @@
 import { $, $$, el, fmtClock, buzz } from './util.js';
 import * as store from './store.js';
 import { keepAwake } from './sensors.js';
+import { registerCustomExercises } from './data/exercises.js';
+import { registerCustomPrograms } from './programs.js';
 
 import { renderTrain } from './views/train.js';
 import { renderLog } from './views/log.js';
@@ -81,25 +83,32 @@ function render() {
 // ---------------------------------------------------------------------------
 
 let restState = null;
-let restRAF = null;
+let restIv = null;
 
 export function startRest(seconds, label = 'Rest') {
   const bar = $('#rest-bar');
-  restState = { target: seconds, start: performance.now(), label, alerted: false };
+  restState = { target: seconds, start: Date.now(), label, alerted: false };
   bar.hidden = false;
   $('.rest-label', bar).textContent = label;
+  // setInterval rather than requestAnimationFrame: rAF stops completely when
+  // the page is hidden, so with the screen off the clock would freeze and the
+  // end-of-rest alert would never fire. Each tick recomputes from the wall
+  // clock, so a throttled tick is late, not wrong.
+  clearInterval(restIv);
+  restIv = setInterval(tickRest, 200);
   tickRest();
 }
 
 export function stopRest() {
   restState = null;
-  cancelAnimationFrame(restRAF);
+  clearInterval(restIv);
+  restIv = null;
   $('#rest-bar').hidden = true;
 }
 
 function tickRest() {
-  if (!restState) return;
-  const elapsed = (performance.now() - restState.start) / 1000;
+  if (!restState) { clearInterval(restIv); restIv = null; return; }
+  const elapsed = (Date.now() - restState.start) / 1000;
   const remaining = restState.target - elapsed;
   const bar = $('#rest-bar');
   const clock = $('.rest-clock', bar);
@@ -118,8 +127,13 @@ function tickRest() {
       if (store.get().settings.soundOnRestEnd) beep();
     }
   }
-  restRAF = requestAnimationFrame(tickRest);
 }
+
+// Redraw the moment the app comes back to the foreground, so you never see a
+// stale number while waiting for the next tick.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && restState) tickRest();
+});
 
 let audioCtx = null;
 function beep() {
@@ -137,7 +151,9 @@ function beep() {
   } catch { /* audio is a nicety, never a failure */ }
 }
 
-$('#rest-bar').addEventListener('click', (e) => {
+// Guarded so importing this module outside the app shell (the test page) does
+// not throw on a missing element.
+$('#rest-bar')?.addEventListener('click', (e) => {
   if (e.target.matches('.rest-skip')) stopRest();
   if (e.target.matches('.rest-add') && restState) restState.target += 30;
 });
@@ -203,6 +219,15 @@ export function confirmSheet(title, message, confirmLabel = 'Confirm') {
 
 store.load();
 
+// Merge the user's own exercises and programmes into the built-in catalogues
+// before anything renders, so every view sees one unified set.
+export function syncCustom() {
+  const db = store.get();
+  registerCustomExercises(db.customExercises);
+  registerCustomPrograms(db.customPrograms);
+}
+syncCustom();
+
 $$('.nav-btn').forEach((b) => b.addEventListener('click', () => go(b.dataset.route)));
 
 window.addEventListener('hashchange', () => {
@@ -222,4 +247,8 @@ if ('serviceWorker' in navigator && window.isSecureContext) {
   });
 }
 
-go(location.hash.replace(/^#\/?/, '') || 'train', { silent: true });
+// Only boot the router when the app shell is actually present. Importing a
+// view from a test page must not try to render into a #view that is not there.
+if ($('#view')) {
+  go(location.hash.replace(/^#\/?/, '') || 'train', { silent: true });
+}

@@ -3,13 +3,19 @@
 // no Node, so the browser is the test runner.
 
 import { platesFor, roundTo, symmetryIndex, e1rm, movingAverage, parseNum, numInput } from './js/util.js';
-import { warmupSets, applySession, nextWorkout, PROGRAMS, incrementFor } from './js/programs.js';
+import { warmupSets, applySession, nextWorkout, PROGRAMS, incrementFor, lastSessionLike, carryForward,
+         registerCustomPrograms, validateProgram, phaseAdvice, programLifts } from './js/programs.js';
 import { plan, bmr, calibrate, scaleFood, dayTotals, FOODS } from './js/nutrition.js';
 import { RECIPES, computeMacros } from './js/data/recipes.js';
 import { analyseJump, analyseSway } from './js/sensors.js';
 import { BUILTIN_TESTS, asymmetry, personalBest } from './js/movement.js';
-import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, findExercise } from './js/data/exercises.js';
+import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, findExercise,
+         registerCustomExercises, normaliseCustom, allMovements } from './js/data/exercises.js';
 import * as store from './js/store.js';
+import { RoundTimer, DEFAULT_BOXING } from './js/timer.js';
+import { supported as mediaSupported, put as mediaPut, get as mediaGet,
+         remove as mediaRemove, prune as mediaPrune, fmtBytes,
+         hasAttachments } from './js/media.js';
 
 let pass = 0, fail = 0;
 const out = document.getElementById('out');
@@ -201,6 +207,96 @@ function sessionFor(db, results) {
   applySession(db, sessionFor(db, {}));
   ok(db.program.working.squat === before, 'a light day does not add weight', `${before} -> ${db.program.working.squat}`);
   void wk;
+}
+
+group('Warm-ups are logged but never count as work');
+{
+  const db = freshDB();
+  const wk = nextWorkout(db);
+  const squat = wk.items.find((i) => i.exerciseId === 'squat');
+  ok(squat.warmup.length > 0, 'the prescription still carries a warm-up ladder');
+
+  // A session where the warm-ups are all ticked but the work sets were missed
+  // must still be treated as a failure.
+  const session = {
+    label: wk.label, type: 'lift', programId: wk.programId,
+    entries: wk.items.map((i) => ({
+      exerciseId: i.exerciseId,
+      prescribedSets: i.sets, prescribedReps: i.reps,
+      toFailure: i.toFailure, light: i.light,
+      warmupSets: (i.warmup || []).map((w) => ({ weight: w.weight, reps: w.reps, done: true })),
+      sets: Array.from({ length: i.sets }, () => ({
+        weight: i.weight, reps: i.exerciseId === 'squat' ? 3 : i.reps, done: true,
+      })),
+    })),
+  };
+  const before = db.program.working.squat;
+  applySession(db, session);
+  ok(db.program.working.squat === before && db.program.fails.squat === 1,
+     'ticked warm-ups do not rescue a missed work set',
+     `${before} -> ${db.program.working.squat}, fails ${db.program.fails.squat}`);
+  ok(db.program.working.press > 50, 'the other lifts still progress normally');
+
+  // Heavy warm-up singles must not be mistaken for work sets by anything that
+  // reads `entry.sets`.
+  const heavyWarm = {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{
+      exerciseId: 'deadlift', prescribedSets: 1, prescribedReps: 5,
+      warmupSets: [{ weight: 500, reps: 1, done: true }],
+      sets: [{ weight: 140, reps: 5, done: true }],
+    }],
+  };
+  const db2 = freshDB();
+  applySession(db2, heavyWarm);
+  ok(db2.program.working.deadlift === 145,
+     'a 500 kg warm-up entry cannot influence the progression',
+     String(db2.program.working.deadlift));
+}
+
+group('Romanian deadlift');
+{
+  ok(!!MAIN_LIFTS.rdl, 'RDL is a main lift');
+  ok(MAIN_LIFTS.rdl.bar && MAIN_LIFTS.rdl.cues.length >= 5, 'it has a bar and real coaching cues');
+  ok(MAIN_LIFTS.rdl.defaultReps === 8, 'it defaults to 8 reps, not the 5 the squat uses');
+  ok(Object.values(MAIN_LIFTS).every((l) => l.defaultSets != null && l.defaultReps != null),
+     'every main lift declares its own default sets and reps');
+
+  const w = warmupSets(100, MAIN_LIFTS.rdl.warmup, SETTINGS);
+  ok(w.length >= 3, 'RDL gets its own warm-up ladder', JSON.stringify(w));
+  ok(w.every((s) => s.weight < 100), 'no RDL warm-up reaches the work weight');
+  ok(w[0].reps >= 5, 'RDL warm-up reps stay high — it doubles as the hamstring warm-up',
+     JSON.stringify(w.map((s) => s.reps)));
+
+  // It progresses like any other main lift when added to a session.
+  const db = freshDB();
+  db.program.working.rdl = 80;
+  applySession(db, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'rdl', prescribedSets: 3, prescribedReps: 8,
+      sets: Array.from({ length: 3 }, () => ({ weight: 80, reps: 8, done: true })) }],
+  });
+  ok(db.program.working.rdl === 82.5, 'RDL progresses by its own increment',
+     String(db.program.working.rdl));
+}
+
+group('One progression decision per lift per session');
+{
+  const db = freshDB();
+  const before = db.program.working.squat;
+  applySession(db, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [
+      { exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+        sets: Array.from({ length: 3 }, () => ({ weight: 100, reps: 5, done: true })) },
+      // A second squat entry, e.g. added by hand mid-session.
+      { exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+        sets: Array.from({ length: 3 }, () => ({ weight: 100, reps: 5, done: true })) },
+    ],
+  });
+  ok(db.program.working.squat === before + 2.5,
+     'two squat entries apply the increment once, not twice',
+     `${before} -> ${db.program.working.squat}`);
 }
 
 group('Texas Method');
@@ -506,6 +602,463 @@ group('Misc maths');
   ok(near(ma[4], 4) && near(ma[0], 1), 'moving average trails correctly', JSON.stringify(ma));
 }
 
+// ---------------------------------------------------------------- custom
+group('Your own exercises');
+{
+  const mine = [
+    { id: 'x-trapbar', name: 'Trap Bar Deadlift', kind: 'main', bar: true,
+      increment: 5, lateIncrement: 2.5, resetPct: 0.9,
+      defaultSets: 3, defaultReps: 5, warmup: 'deadlift', cues: ['Neutral grip.'] },
+    { id: 'x-facepull', name: 'Face Pull', kind: 'assistance', equip: 'cable',
+      defaultSets: 3, defaultReps: 15 },
+  ];
+  const n = registerCustomExercises(mine);
+  ok(n === 2, 'two custom exercises registered');
+  ok(!!MAIN_LIFTS['x-trapbar'], 'a custom main lift lands in MAIN_LIFTS');
+  ok(ASSISTANCE.some((a) => a.id === 'x-facepull'), 'a custom accessory lands in ASSISTANCE');
+  ok(findExercise('x-trapbar')?.name === 'Trap Bar Deadlift', 'and both resolve through findExercise');
+  ok(allMovements().some((m) => m.group === 'Your lifts'),
+     'custom movements are grouped separately in pickers');
+
+  // It must behave like a built-in everywhere downstream.
+  const w = warmupSets(180, MAIN_LIFTS['x-trapbar'].warmup, SETTINGS);
+  ok(w.length >= 3 && w.every((s) => s.weight < 180),
+     'a custom barbell lift gets a real warm-up ladder', JSON.stringify(w));
+
+  const db = freshDB();
+  db.program.working['x-trapbar'] = 150;
+  applySession(db, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'x-trapbar', prescribedSets: 3, prescribedReps: 5,
+      sets: Array.from({ length: 3 }, () => ({ weight: 150, reps: 5, done: true })) }],
+  });
+  ok(db.program.working['x-trapbar'] === 155,
+     'and it progresses by its own increment', String(db.program.working['x-trapbar']));
+
+  // Re-registering must not leave ghosts behind.
+  registerCustomExercises([mine[1]]);
+  ok(!MAIN_LIFTS['x-trapbar'], 'removing a custom lift removes it from the catalogue');
+  ok(ASSISTANCE.filter((a) => a.id === 'x-facepull').length === 1,
+     're-registering does not duplicate the survivors');
+  registerCustomExercises([]);
+  ok(!ASSISTANCE.some((a) => a.id === 'x-facepull'), 'clearing removes everything custom');
+  ok(!!MAIN_LIFTS.squat && ASSISTANCE.some((a) => a.id === 'db-row'),
+     'and never touches the built-ins');
+
+  const norm = normaliseCustom({ id: 'x-y', name: 'Thing', kind: 'main', bar: true });
+  ok(norm.increment > 0 && norm.resetPct === 0.9 && norm.defaultSets > 0,
+     'a half-filled custom exercise gets sane defaults', JSON.stringify(norm));
+}
+
+group('Your own programmes');
+{
+  const mine = {
+    id: 'p-ul', name: 'Upper / Lower', source: 'Your own', custom: true,
+    frequency: '4 × / week', blurb: 'Mine.',
+    phases: { 1: { name: 'Standard', note: '', advanceWhen: '', rotation: [
+      { label: 'Lower A', items: [
+        { ex: 'squat', sets: 3, reps: 5 },
+        { ex: 'rdl', sets: 3, reps: 8 },
+      ] },
+      { label: 'Upper A', items: [
+        { ex: 'bench', sets: 3, reps: 5 },
+        { ex: 'db-row', sets: 3, reps: 10 },
+      ] },
+      { label: 'Lower B', items: [
+        { ex: 'squat', sets: 2, reps: 5, pctOfWorking: 0.8, light: true },
+        { ex: 'deadlift', sets: 1, reps: 5 },
+      ] },
+    ] } },
+  };
+  registerCustomPrograms([mine]);
+  ok(!!PROGRAMS['p-ul'], 'a custom programme is registered alongside the built-ins');
+
+  const db = freshDB();
+  db.program.id = 'p-ul';
+  db.program.working.rdl = 80;
+
+  const d1 = nextWorkout(db);
+  ok(d1.label === 'Lower A', 'the rotation starts at the first day', d1.label);
+  ok(d1.items.length === 2 && d1.items[0].exerciseId === 'squat', 'with the exercises you chose');
+  ok(d1.items[1].weight === 80, 'and each lift at its own working weight',
+     String(d1.items[1].weight));
+  ok(d1.items[0].warmup.length > 0, 'warm-up ladders are generated for a custom programme');
+  ok(d1.items[0].plates !== null, 'and so is the plate breakdown');
+
+  applySession(db, {
+    label: 'Lower A', type: 'lift', programId: 'p-ul',
+    entries: d1.items.map((i) => ({
+      exerciseId: i.exerciseId, prescribedSets: i.sets, prescribedReps: i.reps,
+      sets: Array.from({ length: i.sets }, () => ({ weight: i.weight, reps: i.reps, done: true })),
+    })),
+  });
+  ok(db.program.working.squat === 102.5 && db.program.working.rdl === 82.5,
+     'a custom programme progresses with the same rules',
+     JSON.stringify({ squat: db.program.working.squat, rdl: db.program.working.rdl }));
+  ok(nextWorkout(db).label === 'Upper A', 'and advances to the next day');
+
+  db.program.cursor = 2;
+  const light = nextWorkout(db);
+  ok(light.items[0].light === true && light.items[0].weight === roundTo(102.5 * 0.8, 2.5),
+     'a day marked under 90 % is treated as a light day',
+     JSON.stringify({ light: light.items[0].light, w: light.items[0].weight }));
+  const beforeLight = db.program.working.squat;
+  applySession(db, {
+    label: 'Lower B', type: 'lift', programId: 'p-ul',
+    entries: light.items.map((i) => ({
+      exerciseId: i.exerciseId, prescribedSets: i.sets, prescribedReps: i.reps, light: i.light,
+      sets: Array.from({ length: i.sets }, () => ({ weight: i.weight, reps: i.reps, done: true })),
+    })),
+  });
+  ok(db.program.working.squat === beforeLight,
+     'and a light day still does not drive progression in a custom programme');
+
+  // The rotation wraps.
+  db.program.cursor = 3;
+  ok(nextWorkout(db).label === 'Lower A', 'the rotation wraps back round');
+
+  // Validation.
+  ok(validateProgram(mine).length === 0, 'a complete programme validates clean');
+  ok(validateProgram({ name: '', phases: { 1: { rotation: [] } } }).length >= 2,
+     'a blank programme reports what is missing');
+  ok(validateProgram({ name: 'X', phases: { 1: { rotation: [{ label: '', items: [] }] } } })
+     .some((p) => p.includes('no exercises')), 'an empty day is caught');
+
+  // An empty rotation must not crash the training screen.
+  registerCustomPrograms([{ ...mine, id: 'p-empty', phases: { 1: { name: 'S', note: '', rotation: [] } } }]);
+  const db2 = freshDB();
+  db2.program.id = 'p-empty';
+  ok(nextWorkout(db2) === null, 'a programme with no days returns null rather than throwing');
+  ok(phaseAdvice({ ...db2, sessions: [] }) === null,
+     'and phase advice stays quiet for a programme you wrote yourself');
+
+  registerCustomPrograms([]);
+  ok(!PROGRAMS['p-ul'] && !!PROGRAMS['ss-novice'],
+     'clearing custom programmes leaves the built-ins alone');
+}
+
+group('The four-day preset');
+{
+  const p = PROGRAMS['tv-4day'];
+  ok(!!p, 'the four-day rotation is available as a preset');
+  const days = p.phases[1].rotation;
+  ok(days.length === 4, 'four days', String(days.length));
+
+  const db = freshDB();
+  db.program.id = 'tv-4day';
+  db.program.working.rdl = 80;
+  db.program.working.dip = 0;
+
+  const d1 = nextWorkout(db);
+  ok(d1.items.map((i) => i.exerciseId).join(',') === 'squat,press,deadlift',
+     'day 1 is squat, press, deadlift', d1.items.map((i) => i.exerciseId).join(','));
+
+  db.program.cursor = 1;
+  const d2 = nextWorkout(db);
+  ok(d2.items.map((i) => i.exerciseId).join(',') === 'chinup,dip,liu-raise',
+     'day 2 is chins, dips, Liu raises', d2.items.map((i) => i.exerciseId).join(','));
+  ok(d2.items[0].bodyweight && d2.items[1].bodyweight,
+     'chins and dips are bodyweight lifts that take added weight');
+  ok(d2.items[0].toFailure && d2.items[1].toFailure, 'and both run to failure');
+
+  db.program.cursor = 2;
+  const d3 = nextWorkout(db);
+  ok(d3.items.length === 1 && d3.items[0].conditioning === true,
+     'day 3 is a conditioning day', JSON.stringify(d3.items[0]));
+  ok(d3.items[0].rounds === 12 && d3.items[0].minutes === 3,
+     '12 × 3 minute rounds', JSON.stringify(d3.items[0]));
+  ok(d3.items[0].weight === null, 'a conditioning slot carries no weight');
+
+  db.program.cursor = 3;
+  const d4 = nextWorkout(db);
+  ok(d4.items.map((i) => i.exerciseId).join(',') === 'squat,bench,rdl',
+     'day 4 is squat, bench, RDL', d4.items.map((i) => i.exerciseId).join(','));
+
+  db.program.cursor = 4;
+  ok(nextWorkout(db).label === days[0].label, 'and then it repeats');
+
+  // A conditioning day must not touch the progression.
+  db.program.cursor = 2;
+  const before = JSON.stringify(db.program.working);
+  applySession(db, {
+    label: 'Day 3 — Bag', type: 'lift', programId: 'tv-4day',
+    entries: [{ exerciseId: 'box-bag-int', conditioning: true, done: true, sets: [] }],
+  });
+  ok(JSON.stringify(db.program.working) === before,
+     'a bag day changes no working weights');
+
+  // Dips progress on added weight once the rep target is cleared.
+  db.program.working.dip = 0;
+  applySession(db, {
+    label: 'Day 2', type: 'lift', programId: 'tv-4day',
+    entries: [{ exerciseId: 'dip', prescribedSets: 3, prescribedReps: 0, toFailure: true,
+      sets: [{ weight: 0, reps: 16, done: true }] }],
+  });
+  ok(db.program.working.dip > 0, 'clearing 15 dips starts adding weight',
+     String(db.program.working.dip));
+
+  ok(programLifts({ ...db, program: { ...db.program, phase: 1 } }).length > 0,
+     'programLifts survives a rotation containing a conditioning day');
+  ok(validateProgram(p).length === 0, 'the preset validates clean', validateProgram(p).join(' '));
+}
+
+group('Boxing round timer');
+{
+  // Drive the clock by hand rather than waiting in real time.
+  const make = (cfg) => {
+    const t = new RoundTimer(cfg);
+    const events = [];
+    t.onEvent = (n) => events.push(n);
+    let now = 1_000_000;
+    const origNow = Date.now;
+    Date.now = () => now;
+    return {
+      t, events,
+      advance(sec) { now += sec * 1000; t._check(); },
+      restore() { Date.now = origNow; },
+    };
+  };
+
+  const h = make({ rounds: 3, roundSec: 180, restSec: 60, prepSec: 0,
+                   inRoundWarnSec: 30, endWarnSec: 10, restWarnSec: 10 });
+  try {
+    ok(h.t.phase === 'work' && h.t.round === 1, 'starts on round 1 with no lead-in');
+    h.t.start();
+    ok(h.events.includes('bell'), 'a bell opens the round');
+
+    h.advance(149);
+    ok(!h.events.includes('warn'), 'no warning before its time', String(h.t.remaining));
+
+    h.advance(2);                       // 151 s in, 29 s left
+    ok(h.events.includes('warn'), 'the 30 s clapper fires', String(h.t.remaining));
+    const warns = h.events.filter((e) => e === 'warn').length;
+    h.advance(5);
+    ok(h.events.filter((e) => e === 'warn').length === warns,
+       'and it fires exactly once');
+
+    h.advance(15);                      // 171 s in, 9 s left
+    ok(h.events.includes('endwarn'), 'the 10 s warning fires');
+
+    h.advance(10);                      // round over
+    ok(h.t.phase === 'rest', 'the round ends into rest', h.t.phase);
+    ok(h.t.roundsCompleted === 1, 'one round is banked', String(h.t.roundsCompleted));
+
+    h.advance(51);                      // 9 s of rest left
+    ok(h.events.includes('restwarn'), 'seconds out fires before the rest ends');
+
+    h.advance(10);
+    ok(h.t.phase === 'work' && h.t.round === 2, 'and it rolls into round 2',
+       `${h.t.phase} r${h.t.round}`);
+
+    // Run out the session.
+    h.advance(180); h.advance(60); h.advance(180);
+    ok(h.t.phase === 'done', 'the session finishes after the last round', h.t.phase);
+    ok(h.t.roundsCompleted === 3, 'all three rounds counted', String(h.t.roundsCompleted));
+    ok(h.events.includes('done'), 'and a done event fires');
+    ok(h.t.workSecondsDone === 540, '3 × 3 min = 540 s of work',
+       String(h.t.workSecondsDone));
+  } finally { h.restore(); }
+
+  // A warning longer than the round must never fire.
+  const h2 = make({ rounds: 1, roundSec: 20, restSec: 0, prepSec: 0,
+                    inRoundWarnSec: 30, endWarnSec: 10, restWarnSec: 10 });
+  try {
+    h2.t.start();
+    h2.advance(11);
+    ok(!h2.events.includes('warn'),
+       'a 30 s warning is suppressed on a 20 s round');
+    ok(h2.events.includes('endwarn'), 'but the 10 s warning still fires');
+  } finally { h2.restore(); }
+
+  // Lead-in.
+  const h3 = make({ rounds: 2, roundSec: 60, restSec: 30, prepSec: 10,
+                    inRoundWarnSec: 0, endWarnSec: 0, restWarnSec: 0 });
+  try {
+    ok(h3.t.phase === 'prep', 'a lead-in starts in prep');
+    h3.t.start();
+    h3.advance(10);
+    ok(h3.t.phase === 'work' && h3.t.round === 1, 'then opens round 1');
+    ok(h3.t.roundsCompleted === 0, 'nothing banked yet');
+    h3.advance(60);
+    ok(h3.t.phase === 'rest', 'into rest');
+    h3.advance(30);
+    h3.advance(60);
+    ok(h3.t.phase === 'done' && h3.t.roundsCompleted === 2, 'two rounds and done');
+  } finally { h3.restore(); }
+
+  // Zero rest chains rounds straight together.
+  const h4 = make({ rounds: 3, roundSec: 30, restSec: 0, prepSec: 0,
+                    inRoundWarnSec: 0, endWarnSec: 0, restWarnSec: 0 });
+  try {
+    h4.t.start();
+    h4.advance(30);
+    ok(h4.t.phase === 'work' && h4.t.round === 2,
+       'with no rest configured, rounds run back to back', `${h4.t.phase} r${h4.t.round}`);
+  } finally { h4.restore(); }
+
+  ok(DEFAULT_BOXING.rounds === 12 && DEFAULT_BOXING.roundSec === 180,
+     'defaults are 12 × 3 min');
+
+  // The case that matters on a phone: the app is backgrounded for minutes and
+  // gets no frames at all. On return it must land on the right round, not one
+  // phase later.
+  const h5 = make({ rounds: 12, roundSec: 180, restSec: 60, prepSec: 0,
+                    inRoundWarnSec: 30, endWarnSec: 10, restWarnSec: 10 });
+  try {
+    h5.t.start();
+    h5.advance(180 + 60 + 180 + 60 + 90);   // through rounds 1–2 and into round 3
+    ok(h5.t.phase === 'work' && h5.t.round === 3,
+       'a long background gap rolls through every phase that elapsed',
+       `${h5.t.phase} round ${h5.t.round}`);
+    ok(Math.abs(h5.t.remaining - 90) < 0.5,
+       'and lands at the right point inside the round, overshoot carried',
+       String(h5.t.remaining));
+    ok(h5.t.roundsCompleted === 2, 'with the right number banked',
+       String(h5.t.roundsCompleted));
+
+    // A gap past the end of the session must finish, not spin.
+    h5.advance(60 * 60);
+    ok(h5.t.phase === 'done', 'and a gap past the end simply finishes', h5.t.phase);
+  } finally { h5.restore(); }
+}
+
+group('Set attachments');
+{
+  ok(typeof indexedDB !== 'undefined' && mediaSupported,
+     'media storage is available in this browser');
+
+  const set = { weight: 100, reps: 5, done: true };
+  ok(!hasAttachments(set), 'a bare set has nothing attached');
+  ok(hasAttachments({ ...set, note: 'felt heavy' }), 'a comment counts');
+  ok(hasAttachments({ ...set, media: [{ id: 'm1', kind: 'video' }] }), 'a clip counts');
+  ok(!hasAttachments({ ...set, note: '   ' }), 'whitespace is not a comment');
+  ok(!hasAttachments({ ...set, media: [] }), 'an empty media list is not an attachment');
+
+  ok(fmtBytes(0) === '0 KB' && fmtBytes(2048) === '2 KB' && fmtBytes(5 * 1024 * 1024) === '5.0 MB',
+     'byte sizes format sensibly', `${fmtBytes(2048)} / ${fmtBytes(5 * 1024 * 1024)}`);
+
+  // Round-trip a blob through IndexedDB and confirm prune only takes orphans.
+  window.__mediaTest = (async () => {
+    const blob = new Blob(['x'.repeat(1000)], { type: 'video/mp4' });
+    await mediaPut('m-kept', blob, { kind: 'video' });
+    await mediaPut('m-orphan', blob, { kind: 'video' });
+    const back = await mediaGet('m-kept');
+    const db = {
+      sessions: [{ entries: [{ sets: [{ media: [{ id: 'm-kept', kind: 'video' }] }], warmupSets: [] }] }],
+      activeSession: null,
+    };
+    const res = await mediaPrune(db);
+    const still = await mediaGet('m-kept');
+    const gone = await mediaGet('m-orphan');
+    await mediaRemove('m-kept');
+    return { size: back?.size, removed: res.removed, kept: !!still, orphanGone: !gone };
+  })();
+}
+
+// ---------------------------------------------------------------- carry
+group('Last session carries forward');
+{
+  const KEY = 'ironlog.db';
+  const backup = localStorage.getItem(KEY);
+  try {
+    store.wipe();
+    store.update((d) => {
+      d.program.working = { squat: 100, press: 50, bench: 70, deadlift: 140, rdl: 80 };
+      d.sessions.push({
+        id: 'prev', type: 'lift', programId: 'ss-novice', label: 'A', date: '2026-07-20',
+        entries: [
+          // Programmed — must NOT be carried; the engine owns these.
+          { exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+            sets: [{ weight: 95, reps: 5, done: true }] },
+          // Chosen extras — these are what should come back.
+          { exerciseId: 'db-row', assistance: true, prescribedSets: 3, prescribedReps: 10,
+            sets: [{ weight: 30, reps: 10, done: true }, { weight: 30, reps: 9, done: true }] },
+          { exerciseId: 'rdl', prescribedSets: 3, prescribedReps: 8,
+            sets: [{ weight: 80, reps: 8, done: true }] },
+        ],
+      });
+    }, { immediate: true });
+
+    const db = store.get();
+    const prev = lastSessionLike(db, 'A');
+    ok(prev?.id === 'prev', 'finds the last session for the same slot');
+    ok(lastSessionLike(db, 'B')?.id === 'prev',
+       'falls back to the most recent session when the slot has never been run');
+
+    const wk = nextWorkout(db);
+    const programmed = new Set(wk.items.map((i) => i.exerciseId));
+    const extras = prev.entries.filter((e) => !programmed.has(e.exerciseId));
+    ok(extras.length === 2, 'only the non-programmed work is eligible to carry',
+       JSON.stringify(extras.map((e) => e.exerciseId)));
+    ok(!extras.some((e) => e.exerciseId === 'squat'),
+       'the programmed squat is not carried — its weight comes from the progression');
+    ok(wk.items.find((i) => i.exerciseId === 'squat').weight === 100,
+       'and that programmed weight is the current working weight, not last session\'s 95',
+       String(wk.items.find((i) => i.exerciseId === 'squat').weight));
+
+    const row = extras.find((e) => e.exerciseId === 'db-row');
+    ok(row.sets.length === 2, 'carried work remembers how many sets you actually did');
+    ok(row.sets.at(-1).weight === 30 && row.sets.at(-1).reps === 9,
+       'and the weight and reps you actually used');
+
+    // The function the app actually calls.
+    const carried = carryForward(db, wk);
+    ok(carried.entries.length === 2, 'carryForward returns exactly the extras',
+       JSON.stringify(carried.entries.map((e) => e.exerciseId)));
+    ok(carried.from === '2026-07-20', 'and reports the date it came from');
+    const cRow = carried.entries.find((e) => e.exerciseId === 'db-row');
+    ok(cRow.sets.length === 2 && cRow.sets[0].weight === 30 && cRow.sets[0].reps === 9,
+       'pre-filled with last time\'s numbers, ready to tick off');
+    ok(cRow.sets.every((s) => !s.done), 'but nothing is pre-ticked — you still have to do the work');
+    // The ownership split: the engine owns main-lift weights, you own accessories.
+    const cRdlW = carried.entries.find((e) => e.exerciseId === 'rdl');
+    ok(cRdlW.sets[0].weight === 80,
+       'a carried main lift comes back at its working weight, not last session\'s',
+       `${cRdlW.sets[0].weight} (working 80, last session 0)`);
+    ok(cRdlW.derived === false, 'and it keeps progressing like any main lift');
+    ok(carried.entries.find((e) => e.exerciseId === 'db-row').derived === true,
+       'carried accessory work stays derived and never touches the programme');
+    ok(carried.entries.find((e) => e.exerciseId === 'db-row').sets[0].weight === 30,
+       'accessory weight is exactly what you last used');
+
+    // A carried barbell lift must still get a warm-up ladder to tick off.
+    const cRdl = carried.entries.find((e) => e.exerciseId === 'rdl');
+    ok(cRdl.warmupSets.length > 0, 'a carried barbell lift gets warm-up rows',
+       JSON.stringify(cRdl.warmupSets));
+    ok(cRdl.warmupSets.every((w) => w.weight < cRdl.sets[0].weight),
+       'and none of them reaches the work weight');
+    ok(cRdl.warmupSets.every((w) => !w.done), 'warm-ups are not pre-ticked either');
+    ok(carried.entries.find((e) => e.exerciseId === 'db-row').warmupSets.length === 0,
+       'a dumbbell accessory gets no barbell warm-up ladder');
+
+    // Completing carried work: the main lift advances, the accessory does not
+    // touch anything, and the programmed lifts are untouched by either.
+    const beforeRdl = db.program.working.rdl;
+    const beforeSquat = db.program.working.squat;
+    applySession(db, {
+      label: 'A', type: 'lift', programId: 'ss-novice',
+      entries: carried.entries.map((e) => ({
+        ...e, sets: e.sets.map((x) => ({ ...x, done: true })),
+      })),
+    });
+    ok(db.program.working.rdl === beforeRdl + 2.5,
+       'a completed carried main lift progresses',
+       `${beforeRdl} -> ${db.program.working.rdl}`);
+    ok(db.program.working.squat === beforeSquat,
+       'and the programmed lifts are untouched by carried work',
+       `${beforeSquat} -> ${db.program.working.squat}`);
+
+    // With no history at all there is simply nothing to carry.
+    store.wipe();
+    const empty = carryForward(store.get(), nextWorkout(store.get()));
+    ok(empty.entries.length === 0 && empty.from === null,
+       'a first-ever session carries nothing and does not crash');
+  } finally {
+    if (backup !== null) localStorage.setItem(KEY, backup);
+    else localStorage.removeItem(KEY);
+  }
+}
+
 // ---------------------------------------------------------------- store
 group('Export / import round trip');
 {
@@ -564,6 +1117,24 @@ group('Export / import round trip');
 }
 
 // ---------------------------------------------------------------- summary
+// The IndexedDB round trip is genuinely asynchronous, so it reports itself
+// once it settles rather than being skipped.
+if (window.__mediaTest) {
+  window.__mediaTest.then((r) => {
+    group('Set attachments — storage round trip');
+    ok(r.size === 1000, 'a blob comes back the same size it went in', JSON.stringify(r));
+    ok(r.kept, 'a referenced file survives a prune');
+    ok(r.orphanGone && r.removed === 1, 'and exactly the orphan is removed', JSON.stringify(r));
+    const el2 = document.getElementById('summary');
+    el2.textContent = `${pass} passed, ${fail} failed`;
+    el2.className = fail ? 'fail' : 'pass';
+    window.__results = { pass, fail };
+  }).catch((e) => {
+    group('Set attachments — storage round trip');
+    ok(false, 'IndexedDB round trip', String(e));
+  });
+}
+
 const s = document.getElementById('summary');
 s.textContent = `${pass} passed, ${fail} failed`;
 s.className = fail ? 'fail' : 'pass';

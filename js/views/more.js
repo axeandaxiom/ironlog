@@ -6,6 +6,8 @@ import { PROGRAMS, programLifts, incrementFor } from '../programs.js';
 import { MAIN_LIFTS } from '../data/exercises.js';
 import { support } from '../sensors.js';
 import { sheet, confirmSheet } from '../app.js';
+import * as media from '../media.js';
+import { openProgramManager, openExerciseManager } from './build.js';
 
 export function renderMore(view, ctx) {
   const db = store.get();
@@ -27,29 +29,30 @@ export function renderMore(view, ctx) {
     el('div', { class: 'note' },
       el('b', {}, 'How to sync phone and Mac: '),
       'Export on the device you just used, save the file into Dropbox or iCloud Drive, then Import it on the other device and choose Merge. Merge de-duplicates by record id, so importing the same file twice changes nothing.'),
+    mediaRow(),
     el('div', { class: 'note warn' },
       el('b', {}, 'Clearing your browser data deletes this. '),
       'Safari on iOS will also evict site storage on its own if the app goes unused for several weeks. Export regularly — it is the only backup that exists.')
   ));
 
   // ---- programme ----
-  view.append(el('h2', {}, 'Programme'));
-  const progSel = el('select', {}, Object.values(PROGRAMS).map((p) => el('option', { value: p.id }, p.name)));
-  progSel.value = db.program.id;
-  progSel.addEventListener('change', async () => {
-    const ok = await confirmSheet('Change programme?',
-      'Your working weights and history are kept, but the session rotation resets to the beginning.', 'Change');
-    if (!ok) { progSel.value = db.program.id; return; }
-    store.update((d) => { d.program.id = progSel.value; d.program.phase = 1; d.program.cursor = 0; d.program.tmWeek = 0; });
-    ctx.refresh();
-  });
+  const prog = PROGRAMS[db.program.id] || PROGRAMS['ss-novice'];
+  const days = prog.phases[db.program.phase]?.rotation || prog.phases[1].rotation;
 
-  const prog = PROGRAMS[db.program.id];
+  view.append(el('h2', {}, 'Programme'));
   view.append(el('div', { class: 'card' },
-    el('div', { class: 'field' }, el('label', {}, 'Programme'), progSel),
+    el('div', { class: 'row between' },
+      el('div', { class: 'grow' },
+        el('div', { class: 'li-title', style: { fontSize: '16px' } }, prog.name),
+        el('div', { class: 'li-sub' }, `${prog.source} · ${prog.frequency}`)),
+      prog.custom && el('span', { class: 'pill' }, 'yours')),
     el('div', { class: 'note' }, prog.blurb),
-    el('p', { class: 'sub' }, `${prog.source} · ${prog.frequency}`),
+    el('div', { class: 'li-sub', style: { marginBottom: '10px' } },
+      `${days.length} day rotation: ${days.map((d) => d.label).join(' → ')}`),
     el('div', { class: 'btn-row' },
+      el('button', { class: 'btn-primary btn-sm', onclick: () => openProgramManager(ctx) }, 'Programmes'),
+      el('button', { class: 'btn-sm', onclick: () => openExerciseManager(ctx) }, 'Exercises')),
+    el('div', { class: 'btn-row', style: { marginTop: '8px' } },
       el('button', { class: 'btn-sm', onclick: () => openWorkingWeights(ctx, db) }, 'Working weights'),
       el('button', { class: 'btn-sm', onclick: () => openIncrements(ctx, db) }, 'Increments'))
   ));
@@ -147,6 +150,26 @@ export function renderMore(view, ctx) {
 
   view.append(el('p', { class: 'sub', style: { textAlign: 'center', marginTop: '20px' } },
     `IronLog · data created ${fmtDateLong(db.createdAt.slice(0, 10))}`));
+}
+
+/** Media lives in IndexedDB, not in the export file — say so, and show the size. */
+function mediaRow() {
+  const node = el('div', { class: 'note' }, 'Checking attached media…');
+  media.totalSize().then(async (bytes) => {
+    const all = await media.listAll();
+    node.replaceChildren(
+      el('b', {}, `${all.length} attachment${all.length === 1 ? '' : 's'}, ${media.fmtBytes(bytes)}. `),
+      'Video and audio are stored separately from the training log, because they are far too large for the export file. Your comments and the record of what was attached do travel; the files themselves stay on this device.');
+    if (all.length) {
+      node.append(el('button', { class: 'btn-sm btn-block', style: { marginTop: '10px' }, onclick: async () => {
+        const res = await media.prune(store.get());
+        toast(res.removed
+          ? `Removed ${res.removed} orphaned file${res.removed === 1 ? '' : 's'}, freed ${media.fmtBytes(res.freed)}`
+          : 'Nothing orphaned', 'good');
+      } }, 'Clean up orphaned files'));
+    }
+  }).catch(() => { node.textContent = 'Media storage is unavailable in this browser.'; });
+  return node;
 }
 
 function toggle(label, value, onChange) {

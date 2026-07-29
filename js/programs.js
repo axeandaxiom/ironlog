@@ -7,8 +7,8 @@
 // is faked — phase advancement is a decision the lifter makes, and the app
 // only tells you when the criteria are met.
 
-import { MAIN_LIFTS } from './data/exercises.js';
-import { roundTo, platesFor } from './util.js';
+import { MAIN_LIFTS, exerciseName } from './data/exercises.js';
+import { roundTo, platesFor, uid } from './util.js';
 
 // ---------------------------------------------------------------------------
 // Program definitions
@@ -103,6 +103,44 @@ export const PROGRAMS = {
     },
   },
 
+  'tv-4day': {
+    id: 'tv-4day',
+    name: 'Four-Day Barbell + Bag',
+    source: 'Your default',
+    frequency: '4 days, then repeat',
+    blurb:
+      'Two barbell days built on the Starting Strength lifts, a bodyweight pressing and pulling day, and a bag day. The rotation repeats: day 4 is followed by day 1 again, so it drifts through the week rather than locking to fixed weekdays.',
+    phases: {
+      1: {
+        name: 'Standard',
+        note:
+          'Squat twice per rotation, pull heavy once and light once. Chins and dips carry their own added weight and progress like any other lift. The bag day is conditioning — it is not competing with the barbell work as long as it stays technical.',
+        rotation: [
+          { label: 'Day 1 — Squat / Press / Pull', items: [
+            { ex: 'squat', sets: 3, reps: 5 },
+            { ex: 'press', sets: 3, reps: 5 },
+            { ex: 'deadlift', sets: 1, reps: 5 },
+          ] },
+          { label: 'Day 2 — Bodyweight', items: [
+            { ex: 'chinup', sets: 3, reps: 0, toFailure: true },
+            { ex: 'dip', sets: 3, reps: 0, toFailure: true },
+            { ex: 'liu-raise', sets: 3, reps: 15 },
+          ] },
+          { label: 'Day 3 — Bag', items: [
+            { conditioningId: 'box-bag-int', rounds: 12, minutes: 3, restSec: 60 },
+          ] },
+          { label: 'Day 4 — Squat / Bench / RDL', items: [
+            { ex: 'squat', sets: 3, reps: 5 },
+            { ex: 'bench', sets: 3, reps: 5 },
+            { ex: 'rdl', sets: 3, reps: 8 },
+          ] },
+        ],
+        advanceWhen:
+          'You stop adding weight session to session on the squat. At that point the four-day rotation is still fine — it is the jump size that needs to shrink first, then the progression model.',
+      },
+    },
+  },
+
   'texas-method': {
     id: 'texas-method',
     name: 'Texas Method',
@@ -140,6 +178,76 @@ export const PROGRAMS = {
 };
 
 // ---------------------------------------------------------------------------
+// Your own programmes.
+//
+// A custom programme is the same data shape as the two above, merged into
+// PROGRAMS at boot. The engine does not know or care which is which, so a
+// programme you build gets the same progression, resets, warm-ups and plate
+// maths as the built-ins.
+// ---------------------------------------------------------------------------
+
+let registeredPrograms = [];
+
+export function registerCustomPrograms(list = []) {
+  for (const old of registeredPrograms) delete PROGRAMS[old.id];
+  registeredPrograms = list;
+  for (const p of list) PROGRAMS[p.id] = p;
+  return list.length;
+}
+
+/** A blank programme, shaped exactly like the built-in ones. */
+export function newCustomProgram() {
+  return {
+    id: null,
+    name: '',
+    source: 'Your own',
+    frequency: '',
+    blurb: '',
+    custom: true,
+    phases: {
+      1: {
+        name: 'Standard',
+        note: '',
+        rotation: [],
+        advanceWhen: '',
+      },
+    },
+  };
+}
+
+/** A blank day, ready for exercises. */
+export const newProgramDay = (label = '') => ({ label, items: [] });
+
+/**
+ * One exercise slot within a day.
+ * `pctOfWorking` derives the weight from the working weight (a light day, or
+ * a volume day at 90 %); `light` additionally excludes it from progression.
+ */
+export const newProgramItem = (ex, sets = 3, reps = 5) => ({ ex, sets, reps });
+
+/** Validation — returns a list of problems, empty when the programme is sound. */
+export function validateProgram(p) {
+  const problems = [];
+  if (!p.name?.trim()) problems.push('Give the programme a name.');
+  const rotation = p.phases?.[1]?.rotation || [];
+  if (!rotation.length) problems.push('Add at least one training day.');
+  rotation.forEach((day, i) => {
+    if (!day.label?.trim()) problems.push(`Day ${i + 1} needs a name.`);
+    if (!day.items.length) problems.push(`"${day.label || `Day ${i + 1}`}" has no exercises.`);
+    day.items.forEach((it) => {
+      if (it.conditioningId) {
+        if (!(it.rounds > 0)) problems.push(`"${day.label}": rounds must be at least 1.`);
+        return;
+      }
+      if (!it.ex) problems.push(`"${day.label}" has an empty exercise slot.`);
+      if (!(it.sets > 0)) problems.push(`"${day.label}": sets must be at least 1.`);
+      if (it.reps < 0) problems.push(`"${day.label}": reps cannot be negative.`);
+    });
+  });
+  return problems;
+}
+
+// ---------------------------------------------------------------------------
 // Warm-ups
 // ---------------------------------------------------------------------------
 
@@ -149,6 +257,9 @@ const WARMUP_SCHEMES = {
   full: { emptyBarSets: 2, steps: [[0.4, 5], [0.6, 3], [0.8, 2]] },
   deadlift: { emptyBarSets: 0, steps: [[0.45, 5], [0.65, 3], [0.85, 2]] },
   clean: { emptyBarSets: 2, steps: [[0.5, 3], [0.7, 3], [0.85, 2]] },
+  // The RDL is a lighter, higher-rep lift and the warm-up doubles as the
+  // hamstring warm-up, so the reps stay higher than a deadlift ramp.
+  rdl: { emptyBarSets: 1, steps: [[0.5, 8], [0.7, 5], [0.85, 5]] },
   none: { emptyBarSets: 0, steps: [] },
 };
 
@@ -206,6 +317,7 @@ export function nextWorkout(db) {
   if (!def) return null;
   const phase = def.phases[prog.phase] || def.phases[1];
   const rotation = phase.rotation;
+  if (!rotation.length) return null;   // a programme with no days yet
   const slot = rotation[prog.cursor % rotation.length];
 
   // Texas Method swaps press and bench on a weekly cycle.
@@ -214,6 +326,18 @@ export function nextWorkout(db) {
   const useClean = def.id === 'texas-method' && prog.tmWeek % 2 === 1;
 
   const items = slot.items.map((item) => {
+    // A conditioning slot is time and rounds, not sets and reps. It is logged
+    // as a conditioning session, and it never touches the progression.
+    if (item.conditioningId) {
+      return {
+        exerciseId: item.conditioningId,
+        conditioning: true,
+        rounds: item.rounds ?? null,
+        minutes: item.minutes ?? null,
+        restSec: item.restSec ?? 60,
+        sets: 0, reps: 0, weight: null, warmup: [],
+      };
+    }
     let exId = item.ex;
     if (swapPress && item.alternates) exId = item.alternates;
     if (useClean && item.alternatesWeekly) exId = item.alternatesWeekly;
@@ -272,6 +396,105 @@ export function seedWeight(exId, profile, settings) {
 }
 
 // ---------------------------------------------------------------------------
+// Carrying the last session forward
+// ---------------------------------------------------------------------------
+
+/**
+ * The session to base the next one on.
+ *
+ * Same workout slot first, because that is where your accessory choices for
+ * this day live. Failing that, the most recent lifting session at all — the
+ * first time you run a new slot there is still a sensible answer, and the
+ * accessories most people repeat (rows, ab work, carries) are the same
+ * whichever day it is. Anything wrong can be removed with one tap.
+ */
+export function lastSessionLike(db, label) {
+  const lifts = (db.sessions || [])
+    .filter((s) => (s.type === 'lift' || s.type === 'free') && (s.entries || []).length)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  return lifts.find((s) => s.label === label) || lifts[0] || null;
+}
+
+/**
+ * Everything you did last time that the programme did not prescribe.
+ *
+ * The programmed lifts always come from the progression engine — that is the
+ * whole point, the weight is supposed to go up. What gets carried forward is
+ * the work you chose to add: assistance, extra lifts, anything the template
+ * does not know about, at the weights and reps you actually used.
+ */
+export function carryForward(db, wk) {
+  const prev = lastSessionLike(db, wk.label);
+  if (!prev) return { entries: [], from: null, names: [] };
+
+  const programmed = new Set(wk.items.map((i) => i.exerciseId));
+  const extras = (prev.entries || [])
+    .filter((e) => !programmed.has(e.exerciseId) && !e.conditioning);
+
+  const entries = extras.map((e) => {
+    const lift = MAIN_LIFTS[e.exerciseId];
+    const last = e.sets.at(-1) || { weight: 0, reps: e.prescribedReps || 10 };
+    const count = Math.max(1, e.sets.length);
+
+    // Who owns the weight decides what gets carried.
+    //
+    // A main lift has a working weight and a progression: the engine owns it,
+    // so it comes back at the new heavier number and it keeps progressing.
+    // Carrying last session's weight for a main lift would freeze it forever.
+    //
+    // Accessory work has neither, so it comes back exactly as you last did it
+    // and never touches the programme.
+    const isMain = !!lift;
+    const working = isMain ? db.program.working[e.exerciseId] : null;
+    const weight = isMain && working != null ? working : last.weight;
+    const reps = last.reps || e.prescribedReps || 10;
+    // A carried barbell lift needs its warm-up ladder built too, otherwise the
+    // one thing you cannot do is warm up for the lift you actually repeat.
+    // Prefer the warm-ups you logged last time; fall back to the calculated
+    // ladder for the weight you are about to use.
+    // Warm-ups: reuse the ones you logged last time if the weight has not
+    // moved, otherwise rebuild the ladder for the new work weight.
+    const priorWarm = (e.warmupSets || []).filter((w) => w.weight > 0);
+    const weightMoved = Math.abs(weight - last.weight) > 1e-6;
+    const ladder = priorWarm.length && !weightMoved
+      ? priorWarm.map((w) => ({ weight: w.weight, reps: w.reps, label: w.label || '' }))
+      : (lift && lift.bar ? warmupSets(weight, lift.warmup, db.settings) : []);
+
+    return {
+      id: uid(),
+      exerciseId: e.exerciseId,
+      prescribedSets: count,
+      prescribedReps: reps,
+      toFailure: e.toFailure,
+      bodyweight: e.bodyweight,
+      assistance: e.assistance,
+      // Accessory work never drives the programme. A main lift does — it has
+      // its own working weight, and the duplicate guard in applySession stops
+      // anything already in today's session from progressing twice.
+      derived: !isMain,
+      carriedFrom: prev.date,
+      warmup: ladder,
+      warmupSets: ladder.map((w) => ({
+        weight: w.weight, reps: w.reps, label: w.label, done: false, ts: null,
+      })),
+      sets: Array.from({ length: count }, () => ({
+        weight, reps, done: false, ts: null,
+      })),
+    };
+  });
+
+  return {
+    entries,
+    from: prev.date,
+    // Flagged when the source was a different workout slot, so the UI can say
+    // so rather than implying you did this exact session before.
+    fromLabel: prev.label,
+    sameSlot: prev.label === wk.label,
+    names: extras.map((e) => exerciseName(e.exerciseId)),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Progression
 // ---------------------------------------------------------------------------
 
@@ -285,6 +508,7 @@ export function applySession(db, session) {
   const def = PROGRAMS[prog.id];
   const changes = [];
   const smallest = Math.min(...db.settings.plates) * 2;
+  const seen = new Set();
 
   for (const entry of session.entries) {
     const lift = MAIN_LIFTS[entry.exerciseId];
@@ -293,6 +517,11 @@ export function applySession(db, session) {
     // Light and percentage-derived work never drives progression: it is a
     // consequence of the heavy day, not an input to it.
     if (entry.light || entry.derived) continue;
+
+    // One progression decision per lift per session. Without this, adding a
+    // second squat entry to a session would apply the increment twice.
+    if (seen.has(entry.exerciseId)) continue;
+    seen.add(entry.exerciseId);
 
     const done = entry.sets.filter((s) => s.done);
     if (done.length === 0) continue;
@@ -366,6 +595,7 @@ export function applySession(db, session) {
 export function phaseAdvice(db) {
   const prog = db.program;
   const def = PROGRAMS[prog.id];
+  if (!def || def.custom) return null;   // your own programme, your own call
   const phase = def.phases[prog.phase];
   if (!phase) return null;
 
@@ -395,11 +625,12 @@ export function phaseAdvice(db) {
 
 /** Everything the current program touches, for the settings screen. */
 export function programLifts(db) {
-  const def = PROGRAMS[db.program.id];
+  const def = PROGRAMS[db.program.id] || PROGRAMS['ss-novice'];
   const phase = def.phases[db.program.phase] || def.phases[1];
   const ids = new Set();
   for (const slot of phase.rotation) {
     for (const item of slot.items) {
+      if (item.conditioningId) continue;
       if (MAIN_LIFTS[item.ex]) ids.add(item.ex);
       if (item.alternates) ids.add(item.alternates);
       if (item.alternatesWeekly) ids.add(item.alternatesWeekly);

@@ -9,8 +9,11 @@
 import { el, $, uid, todayISO, num, fmtClock, buzz, toast, platesFor, e1rm, toDisplayWeight, fromDisplayWeight, numInput, parseNum } from '../util.js';
 import * as store from '../store.js';
 import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, INTERFERENCE_NOTE, findExercise, exerciseName, EQUIPMENT, SPORTS } from '../data/exercises.js';
-import { PROGRAMS, nextWorkout, applySession, phaseAdvice, seedWeight, warmupSets } from '../programs.js';
+import { PROGRAMS, nextWorkout, applySession, phaseAdvice, seedWeight, warmupSets, carryForward } from '../programs.js';
 import { startRest, stopRest, sheet, confirmSheet } from '../app.js';
+import { openProgramManager, openExerciseManager, openProgramBuilder } from './build.js';
+import { openRoundTimer, openRoundSettings } from './rounds.js';
+import { openAttachments, hasAttachments } from './attach.js';
 
 export function renderTrain(view, ctx) {
   const db = store.get();
@@ -24,10 +27,26 @@ export function renderTrain(view, ctx) {
 
 function renderPlan(view, ctx, db) {
   const wk = nextWorkout(db);
-  const prog = PROGRAMS[db.program.id];
+  const prog = PROGRAMS[db.program.id] || PROGRAMS['ss-novice'];
   const unit = db.settings.units;
 
   view.append(el('h1', {}, 'Next session'));
+
+  // A programme you built but have not put any days into yet.
+  if (!wk) {
+    view.append(
+      el('div', { class: 'note warn' },
+        el('b', {}, `${prog.name} has no training days yet. `),
+        'Add at least one day with some exercises on it, and it will show up here.'),
+      el('button', { class: 'btn-primary btn-block', onclick: () => openProgramBuilder(ctx, prog) }, 'Add training days'),
+      el('button', { class: 'btn-block', style: { marginTop: '8px' }, onclick: () => openProgramManager(ctx) }, 'Switch programme'),
+      el('div', { class: 'btn-row', style: { marginTop: '14px' } },
+        el('button', { onclick: () => startFreeSession(ctx, db) }, 'Free session'),
+        el('button', { onclick: () => openConditioning(ctx, db) }, 'Conditioning'))
+    );
+    renderRecent(view, db);
+    return;
+  }
 
   if (!hasWeights(db)) {
     view.append(
@@ -53,9 +72,15 @@ function renderPlan(view, ctx, db) {
 
   for (const item of wk.items) {
     const ex = findExercise(item.exerciseId);
-    const target = item.bodyweight
-      ? (item.weight ? `+${num(toDisplayWeight(item.weight, unit))} ${unit} × ${item.sets} × max` : `${item.sets} × max`)
-      : `${num(toDisplayWeight(item.weight, unit))} ${unit} × ${item.sets} × ${item.reps}`;
+    const target = item.conditioning
+      ? `${item.rounds} × ${item.minutes} min`
+      : item.bodyweight
+        ? (item.weight ? `+${num(toDisplayWeight(item.weight, unit))} ${unit} × ${item.sets} × max` : `${item.sets} × max`)
+        // Assistance carries no working weight, so showing "– kg" would just
+        // look broken. Sets and reps are the whole prescription.
+        : item.weight == null
+          ? `${item.sets} × ${item.reps}`
+          : `${num(toDisplayWeight(item.weight, unit))} ${unit} × ${item.sets} × ${item.reps}`;
     view.append(
       el('div', { class: 'card tight' },
         el('div', { class: 'row between' },
@@ -100,7 +125,14 @@ function renderPlan(view, ctx, db) {
     el('div', { class: 'btn-row' },
       el('button', { onclick: () => startFreeSession(ctx, db) }, 'Free session'),
       el('button', { onclick: () => openConditioning(ctx, db) }, 'Conditioning')
-    )
+    ),
+    el('h2', {}, 'Make it yours'),
+    el('div', { class: 'btn-row' },
+      el('button', { onclick: () => openProgramManager(ctx) }, 'Programmes'),
+      el('button', { onclick: () => openExerciseManager(ctx) }, 'Exercises')
+    ),
+    el('div', { class: 'note' },
+      'Not running Starting Strength? Build your own programme — your days, your exercises, your sets and reps — and the app will progress it with the same rules. Add movements it does not know about under Exercises.')
   );
 
   renderRecent(view, db);
@@ -178,7 +210,17 @@ async function advancePhase(ctx, db) {
 // ---------------------------------------------------------------------------
 
 function startSession(ctx, db, wk) {
-  const entries = wk.items.map((item) => ({
+  const entries = wk.items.map((item) => (item.conditioning ? {
+    id: uid(),
+    exerciseId: item.exerciseId,
+    conditioning: true,
+    rounds: item.rounds,
+    minutes: item.minutes,
+    roundsDone: null,
+    rpe: null,
+    done: false,
+    warmup: [], warmupSets: [], sets: [],
+  } : {
     id: uid(),
     exerciseId: item.exerciseId,
     prescribedSets: item.sets,
@@ -187,18 +229,32 @@ function startSession(ctx, db, wk) {
     light: item.light,
     bodyweight: item.bodyweight,
     warmup: item.warmup,
+    // Warm-ups are seeded from the calculated ladder but are yours to edit and
+    // tick off. They are kept apart from `sets` so they can never be mistaken
+    // for work sets when the progression is decided.
+    warmupSets: (item.warmup || []).map((w) => ({
+      weight: w.weight, reps: w.reps, label: w.label, done: false, ts: null,
+    })),
     sets: Array.from({ length: item.sets }, () => ({
       weight: item.weight, reps: item.reps, done: false, ts: null,
     })),
   }));
 
+  const carried = carryForward(db, wk);
+
   store.update((d) => {
     d.activeSession = {
       id: uid(), type: 'lift', date: todayISO(), startedAt: Date.now(),
       programId: wk.programId, phase: wk.phase, label: wk.label, cursor: wk.cursor,
-      entries, notes: '',
+      entries: [...entries, ...carried.entries],
+      carriedFrom: carried.from, carriedLabel: carried.fromLabel,
+      carriedSameSlot: carried.sameSlot, notes: '',
     };
   }, { immediate: true });
+
+  if (carried.names.length) {
+    toast(`Carried forward from ${carried.from}: ${carried.names.join(', ')}`);
+  }
   ctx.refresh();
 }
 
@@ -246,7 +302,24 @@ function renderRunner(view, ctx, db) {
     )
   );
 
-  for (const entry of s.entries) view.append(exerciseBlock(entry, db, ctx));
+  if (s.carriedFrom) {
+    const carried = s.entries.filter((e) => e.carriedFrom);
+    if (carried.length) {
+      view.append(el('div', { class: 'note' },
+        el('b', {}, s.carriedSameSlot === false
+          ? `Carried forward from workout ${s.carriedLabel} on ${s.carriedFrom}. `
+          : 'Carried forward from your last session. '),
+        `${carried.map((e) => exerciseName(e.exerciseId)).join(', ')} — the same weights and reps you used`
+        + `${s.carriedSameSlot === false ? '' : ` on ${s.carriedFrom}`}. `
+        + 'The programmed lifts above come from the progression, not from last time. Remove anything you are not doing today with the ✕.'));
+    }
+  }
+
+  for (const entry of s.entries) {
+    view.append(entry.conditioning
+      ? conditioningBlock(entry, db, ctx)
+      : exerciseBlock(entry, db, ctx));
+  }
 
   view.append(
     el('h2', {}, 'Add to this session'),
@@ -269,10 +342,19 @@ function renderRunner(view, ctx, db) {
   );
 }
 
-const countDone = (s) => s.entries.reduce((a, e) => a + e.sets.filter((x) => x.done).length, 0);
+const countDone = (s) => s.entries.reduce((a, e) => a + (e.sets || []).filter((x) => x.done).length, 0);
+const countWarm = (s) => s.entries.reduce((a, e) => a + (e.warmupSets || []).filter((x) => x.done).length, 0);
+const countCond = (s) => s.entries.filter((e) => e.conditioning && e.done).length;
 
-const summaryText = (s) =>
-  `${s.entries.length} exercise${s.entries.length === 1 ? '' : 's'} · ${countDone(s)} sets logged`;
+const summaryText = (s) => {
+  const warm = countWarm(s);
+  const cond = countCond(s);
+  const parts = [`${s.entries.length} exercise${s.entries.length === 1 ? '' : 's'}`];
+  if (countDone(s) || !cond) parts.push(`${countDone(s)} work set${countDone(s) === 1 ? '' : 's'}`);
+  if (warm) parts.push(`${warm} warm-up`);
+  if (cond) parts.push(`${cond} conditioning`);
+  return parts.join(' · ');
+};
 
 /** Patch the session header in place — the runner never re-renders. */
 function refreshSummary() {
@@ -290,27 +372,46 @@ function exerciseBlock(entry, db, ctx) {
 
   const updateCounter = () => {
     const done = entry.sets.filter((x) => x.done).length;
-    counter.textContent = entry.toFailure
+    const warm = (entry.warmupSets || []).filter((x) => x.done).length;
+    const base = entry.toFailure
       ? `${done}/${entry.prescribedSets} sets`
       : `${done}/${entry.prescribedSets} × ${entry.prescribedReps}`;
+    counter.textContent = warm ? `${base}  ·  ${warm}w` : base;
   };
   updateCounter();
 
-  // Warm-ups: displayed, not logged. Logging warm-up sets is noise, and it
-  // makes the completed-set count meaningless.
-  if (entry.warmup?.length) {
-    const list = el('div', { class: 'warmup-list' });
-    for (const w of entry.warmup) {
-      list.append(el('div', { class: 'warmup-row' },
-        el('span', {}, w.label),
-        el('span', {}, `${num(toDisplayWeight(w.weight, unit))} ${unit} × ${w.reps}`)));
-    }
-    body.append(el('h3', { style: { margin: '0 0 4px' } }, 'Warm-up'), list);
+  // Warm-ups are logged the same way work sets are, but live in their own
+  // array so they can never be counted as work when the progression is
+  // decided or a personal best is checked.
+  entry.warmupSets ||= (entry.warmup || []).map((w) => ({
+    weight: w.weight, reps: w.reps, label: w.label, done: false, ts: null,
+  }));
+
+  if (entry.warmupSets.length || (MAIN_LIFTS[entry.exerciseId] && !entry.bodyweight)) {
+    const wGrid = el('div', { class: 'set-grid warmup-grid' });
+    entry.warmupSets.forEach((set, i) =>
+      wGrid.append(setRow(entry, set, i, db, ctx, updateCounter, { warmup: true })));
+
+    const addWarm = el('button', { class: 'btn-sm btn-ghost', onclick: (e) => {
+      const last = entry.warmupSets.at(-1) || { weight: db.settings.barWeight, reps: 5 };
+      entry.warmupSets.push({ weight: last.weight, reps: last.reps, label: '', done: false, ts: null });
+      store.save();
+      wGrid.append(setRow(entry, entry.warmupSets.at(-1), entry.warmupSets.length - 1,
+        db, ctx, updateCounter, { warmup: true }));
+      updateCounter();
+      e.target.blur();
+    } }, '+ Warm-up set');
+
+    body.append(
+      el('h3', { style: { margin: '0 0 6px' } }, 'Warm-up'),
+      wGrid,
+      el('div', { style: { marginTop: '7px', marginBottom: '4px' } }, addWarm)
+    );
   }
 
   const grid = el('div', { class: 'set-grid' });
   entry.sets.forEach((set, i) => grid.append(setRow(entry, set, i, db, ctx, updateCounter)));
-  body.append(el('h3', { style: { margin: '0 0 6px' } }, 'Work sets'), grid);
+  body.append(el('h3', { style: { margin: '12px 0 6px' } }, 'Work sets'), grid);
 
   body.append(
     el('div', { class: 'btn-row', style: { marginTop: '9px' } },
@@ -340,19 +441,102 @@ function exerciseBlock(entry, db, ctx) {
     );
   }
 
-  return el('div', { class: 'ex-block' },
+  const block = el('div', { class: 'ex-block' },
     el('div', { class: 'ex-head' },
-      el('div', {},
+      el('div', { class: 'grow' },
         el('span', { class: 'ex-name' }, ex?.name || entry.exerciseId),
-        entry.light && el('span', { class: 'pill info', style: { marginLeft: '7px' } }, 'Light')
+        entry.light && el('span', { class: 'pill info', style: { marginLeft: '7px' } }, 'Light'),
+        entry.carriedFrom && el('span', { class: 'pill', style: { marginLeft: '7px' } }, 'carried')
       ),
-      counter
+      el('div', { class: 'row', style: { gap: '8px' } },
+        counter,
+        el('button', {
+          class: 'btn-sm btn-ghost', 'aria-label': `Remove ${ex?.name || entry.exerciseId}`,
+          onclick: () => {
+            store.update((d) => {
+              d.activeSession.entries = d.activeSession.entries.filter((x) => x.id !== entry.id);
+            });
+            ctx.refresh();
+          },
+        }, '✕'))
     ),
     body
   );
+  return block;
 }
 
-function setRow(entry, set, i, db, ctx, updateCounter) {
+/**
+ * A conditioning day inside a programme — rounds and minutes, not sets and
+ * reps. Logged in place like everything else, and it never touches the
+ * progression because it is not a lift.
+ */
+function conditioningBlock(entry, db, ctx) {
+  const c = findExercise(entry.exerciseId);
+  const counter = el('span', { class: 'ex-target' });
+  const update = () => { counter.textContent = entry.done ? 'logged' : `${entry.rounds} × ${entry.minutes} min`; };
+  update();
+
+  const rounds = numInput({ decimal: false, value: String(entry.roundsDone ?? entry.rounds ?? ''), placeholder: 'rounds' });
+  const rpe = numInput({ decimal: false, value: entry.rpe != null ? String(entry.rpe) : '', placeholder: 'RPE 1–10' });
+
+  const commit = () => {
+    const r = parseNum(rounds);
+    entry.roundsDone = Number.isNaN(r) ? null : Math.round(r);
+    const e = parseNum(rpe);
+    entry.rpe = Number.isNaN(e) ? null : Math.round(e);
+    store.save();
+  };
+  rounds.addEventListener('change', commit);
+  rpe.addEventListener('change', commit);
+
+  const doneBtn = el('button', { class: 'btn-primary btn-block', 'aria-pressed': String(!!entry.done) },
+    entry.done ? '✓ Logged' : 'Log this session');
+  doneBtn.addEventListener('click', () => {
+    commit();
+    entry.done = !entry.done;
+    doneBtn.textContent = entry.done ? '✓ Logged' : 'Log this session';
+    doneBtn.setAttribute('aria-pressed', String(entry.done));
+    store.save();
+    update(); refreshSummary(); buzz(entry.done ? 35 : 15);
+  });
+
+  // A proper round timer — rounds, rest, warnings and bells — rather than the
+  // single-interval rest clock the lifting days use.
+  const openTimer = () => openRoundTimer(ctx, {
+    rounds: entry.rounds,
+    roundSec: (entry.minutes || 3) * 60,
+    restSec: entry.restSec ?? 60,
+    onDone: ({ roundsCompleted, workMinutes }) => {
+      if (roundsCompleted > 0) {
+        rounds.value = String(roundsCompleted);
+        entry.roundsDone = roundsCompleted;
+        store.save();
+        update();
+        toast(`${roundsCompleted} rounds, ${workMinutes} min of work`, 'good');
+      }
+    },
+  });
+  const startRound = el('button', { class: 'btn-primary btn-sm btn-block', onclick: openTimer },
+    `Round timer — ${entry.rounds} × ${entry.minutes} min`);
+  const startRestBtn = el('button', { class: 'btn-sm btn-block', onclick: () => openRoundSettings(ctx) },
+    'Timer settings');
+
+  return el('div', { class: 'ex-block' },
+    el('div', { class: 'ex-head' },
+      el('div', { class: 'grow' },
+        el('span', { class: 'ex-name' }, c?.name || entry.exerciseId),
+        el('span', { class: 'pill info', style: { marginLeft: '7px' } }, 'conditioning')),
+      counter),
+    el('div', { class: 'ex-body' },
+      c?.detail && el('div', { class: 'note', style: { marginTop: 0 } }, c.detail),
+      el('div', { class: 'btn-row', style: { marginBottom: '12px' } }, startRound, startRestBtn),
+      el('div', { class: 'grid2' },
+        el('div', { class: 'field' }, el('label', {}, 'Rounds completed'), rounds),
+        el('div', { class: 'field' }, el('label', {}, 'RPE'), rpe)),
+      doneBtn));
+}
+
+function setRow(entry, set, i, db, ctx, updateCounter, { warmup = false } = {}) {
   const unit = db.settings.units;
 
   const wInput = numInput({
@@ -381,8 +565,23 @@ function setRow(entry, set, i, db, ctx, updateCounter) {
     'aria-label': `Mark set ${i + 1} complete`,
   }, set.done ? '✓' : '○');
 
-  const row = el('div', { class: `set-row ${set.done ? 'logged' : ''}` },
-    el('span', { class: 'set-idx' }, String(i + 1)), wInput, rInput, doneBtn);
+  // The set index doubles as the attachment button. It keeps the grid at four
+  // columns — a fifth would squeeze the number fields, which are the things
+  // you actually have to hit with cold hands.
+  const idx = el('button', {
+    class: `set-idx ${hasAttachments(set) ? 'has-media' : ''}`,
+    'aria-label': `Notes and media for set ${i + 1}`,
+  }, warmup ? (set.label || '·') : String(i + 1));
+
+  idx.addEventListener('click', () => {
+    openAttachments(ctx, entry, set, i, {
+      warmup,
+      onChange: () => idx.classList.toggle('has-media', hasAttachments(set)),
+    });
+  });
+
+  const row = el('div', { class: `set-row ${warmup ? 'warm' : ''} ${set.done ? 'logged' : ''}` },
+    idx, wInput, rInput, doneBtn);
 
   doneBtn.addEventListener('click', () => {
     commit();
@@ -396,13 +595,15 @@ function setRow(entry, set, i, db, ctx, updateCounter) {
     refreshSummary();
     buzz(set.done ? 35 : 15);
 
-    if (set.done && db.settings.autoRest) {
+    // Warm-ups get a short rest, or none. Kicking off a four-minute clock
+    // after the empty bar would be actively unhelpful.
+    if (set.done && db.settings.autoRest && !warmup) {
       const kind = MAIN_LIFTS[entry.exerciseId] ? 'main' : 'assistance';
       startRest(db.settings.restSec[kind], `Rest — ${exerciseName(entry.exerciseId)}`);
     }
-    // A personal-best notification is the one interruption worth having, and
-    // it is a toast, not a dialog.
-    if (set.done && !entry.bodyweight && set.reps > 0 && set.weight > 0) {
+    // A personal best can only come from a work set. A warm-up single at a
+    // heavy weight is not a record, and nor is a submaximal ramp.
+    if (set.done && !warmup && !entry.bodyweight && set.reps > 0 && set.weight > 0) {
       const est = e1rm(set.weight, set.reps);
       if (store.recordPR(entry.exerciseId, set.weight, set.reps, todayISO(), est)) {
         toast(`PR — ${exerciseName(entry.exerciseId)} ${num(toDisplayWeight(set.weight, unit))} × ${set.reps}`, 'good');
@@ -470,22 +671,35 @@ function openAddLift(ctx, db) {
       Object.values(MAIN_LIFTS).map((lift) =>
         el('button', { class: 'list-item', onclick: () => {
           const w = db.program.working[lift.id] ?? seedWeight(lift.id, db.profile, db.settings);
+          const sets = lift.defaultSets ?? 3;
+          const reps = lift.defaultReps ?? 5;
+          // Already in today's session? Then this is an extra and must not
+          // drive the progression a second time.
+          const already = db.activeSession.entries.some((e) => e.exerciseId === lift.id);
+          const warm = lift.bodyweight ? [] : warmupSets(w, lift.warmup, db.settings);
           store.update((d) => {
             d.activeSession.entries.push({
-              id: uid(), exerciseId: lift.id, prescribedSets: 3, prescribedReps: 5,
-              bodyweight: !!lift.bodyweight, derived: true,
-              warmup: lift.bodyweight ? [] : warmupSets(w, lift.warmup, d.settings),
-              sets: Array.from({ length: 3 }, () => ({ weight: w, reps: 5, done: false, ts: null })),
+              id: uid(), exerciseId: lift.id, prescribedSets: sets, prescribedReps: reps,
+              toFailure: reps === 0,
+              bodyweight: !!lift.bodyweight, derived: already,
+              warmup: warm,
+              warmupSets: warm.map((x) => ({ weight: x.weight, reps: x.reps, label: x.label, done: false, ts: null })),
+              sets: Array.from({ length: sets }, () => ({ weight: w, reps, done: false, ts: null })),
             });
           });
           close(); ctx.refresh();
         } },
-          el('div', {}, el('div', { class: 'li-title' }, lift.name), el('div', { class: 'li-sub' }, lift.setsReps)),
+          el('div', { class: 'grow' },
+            el('div', { class: 'li-title' }, lift.name),
+            el('div', { class: 'li-sub' }, `${lift.setsReps}${db.program.working[lift.id] ? ` · ${num(toDisplayWeight(db.program.working[lift.id], db.settings.units))} ${db.settings.units}` : ''}`)),
           el('span', { class: 'li-right' }, '+')
         ))
     ));
-    body.append(el('div', { class: 'note warn', style: { marginTop: '12px' } },
-      'Lifts added this way are logged but do not drive the progression — only the programmed sets do.'));
+    body.append(el('div', { class: 'note', style: { marginTop: '12px' } },
+      'A lift added here is tracked and progressed like any other — the next session will prescribe the heavier weight. '
+      + 'The exception is a lift already in today\'s session: a second entry for it is logged but does not apply the increment twice.'));
+    body.append(el('button', { class: 'btn-sm btn-block', onclick: () => { close(); openExerciseManager(ctx); } },
+      '+ Define your own lift'));
   });
 }
 
@@ -497,14 +711,15 @@ function openAddAssistance(ctx, db) {
 
     let equip = 'dumbbell';
     const list = el('div', { class: 'list' });
+    const groups = [...new Set(ASSISTANCE.map((a) => a.equip))];
     const draw = () => {
       list.replaceChildren();
-      ASSISTANCE.filter((a) => a.equip === equip).forEach((a) => {
+      ASSISTANCE.filter((a) => (equip === 'all' ? true : a.equip === equip)).forEach((a) => {
         list.append(el('button', { class: 'list-item', onclick: () => {
           store.update((d) => {
             d.activeSession.entries.push({
               id: uid(), exerciseId: a.id, prescribedSets: 3, prescribedReps: 10,
-              assistance: true, derived: true, warmup: [],
+              assistance: true, derived: true, warmup: [], warmupSets: [],
               sets: Array.from({ length: 3 }, () => ({ weight: 0, reps: 10, done: false, ts: null })),
             });
           });
@@ -520,7 +735,7 @@ function openAddAssistance(ctx, db) {
     };
 
     const chips = el('div', { class: 'chips', style: { margin: '12px 0' } },
-      EQUIPMENT.map((e) => {
+      ['all', ...groups].map((e) => {
         const c = el('button', { class: 'chip', 'aria-pressed': String(e === equip) }, e);
         c.addEventListener('click', () => {
           equip = e;
@@ -530,7 +745,10 @@ function openAddAssistance(ctx, db) {
         return c;
       }));
     body.append(chips, list);
+    body.append(el('button', { class: 'btn-sm btn-block', style: { marginTop: '12px' },
+      onclick: () => { close(); openExerciseManager(ctx); } }, '+ Define your own exercise'));
     draw();
+    void EQUIPMENT;
   });
 }
 
@@ -579,8 +797,22 @@ function logConditioning(ctx, db, c, intoSession, close) {
     const rpe = numInput({ decimal: false, value: String(parseInt(c.rpe, 10) || 6) });
     const notes = el('textarea', { placeholder: 'Rounds completed, pace, how it went' });
 
+    // Anything structured as rounds gets the round timer, parsed straight off
+    // the session's own structure string.
+    const m = c.structure.match(/(\d+)\s*[×x]\s*(\d+)\s*(min|s)\b/i);
+    const timerBtn = m ? el('button', { class: 'btn-primary btn-block', style: { marginBottom: '12px' }, onclick: () => {
+      openRoundTimer(ctx, {
+        rounds: parseInt(m[1], 10),
+        roundSec: m[3].toLowerCase() === 'min' ? parseInt(m[2], 10) * 60 : parseInt(m[2], 10),
+        onDone: ({ roundsCompleted, workMinutes }) => {
+          if (workMinutes > 0) { dur.value = String(workMinutes); toast(`${roundsCompleted} rounds logged`, 'good'); }
+        },
+      });
+    } }, `Round timer — ${m[1]} × ${m[2]} ${m[3]}`) : null;
+
     body.append(
       el('div', { class: 'note' }, c.detail),
+      timerBtn,
       el('div', { class: 'grid2' },
         el('div', { class: 'field' }, el('label', {}, 'Minutes'), dur),
         el('div', { class: 'field' }, el('label', {}, 'RPE 1–10'), rpe)),
@@ -617,7 +849,7 @@ async function finishSession(ctx) {
   const s = db.activeSession;
   if (!s) return;
 
-  const done = countDone(s);
+  const done = countDone(s) + countWarm(s) + countCond(s);
   if (done === 0) {
     const ok = await confirmSheet('Nothing logged', 'No sets were marked complete. Discard this session?', 'Discard');
     if (ok) { store.update((d) => { d.activeSession = null; }); stopRest(); ctx.refresh(); }
@@ -626,33 +858,71 @@ async function finishSession(ctx) {
 
   s.durationSec = Math.round((Date.now() - s.startedAt) / 1000);
   // Drop sets that were never touched so the history reflects what happened.
-  s.entries.forEach((e) => { e.sets = e.sets.filter((x) => x.done); });
-  s.entries = s.entries.filter((e) => e.sets.length > 0);
+  // Warm-ups are kept separately and an exercise survives on warm-ups alone —
+  // if you only got through the ramp, that is still what occurred.
+  // A conditioning slot inside a programme becomes a proper conditioning
+  // record, so it shows up in the conditioning stats rather than as a lift
+  // with no sets.
+  const condRecords = s.entries.filter((e) => e.conditioning && e.done).map((e) => {
+    const c = findExercise(e.exerciseId);
+    return {
+      id: uid(), type: 'conditioning', date: s.date,
+      label: c?.name || e.exerciseId, sport: c?.sport || 'other',
+      conditioningId: e.exerciseId,
+      durationMin: Math.round((e.roundsDone ?? e.rounds ?? 0) * (e.minutes || 0)),
+      rounds: e.roundsDone ?? e.rounds ?? null,
+      rpe: e.rpe ?? null, interference: c?.interference || 'medium',
+      notes: '', entries: [],
+    };
+  });
+
+  s.entries = s.entries.filter((e) => !e.conditioning);
+  s.entries.forEach((e) => {
+    e.sets = e.sets.filter((x) => x.done);
+    e.warmupSets = (e.warmupSets || []).filter((x) => x.done);
+  });
+  s.entries = s.entries.filter((e) => e.sets.length > 0 || e.warmupSets.length > 0);
 
   const changes = s.type === 'lift' ? applySession(db, s) : [];
 
   store.update((d) => {
-    d.sessions.push(s);
+    // A day that was only conditioning leaves no lifting session behind.
+    if (s.entries.length) d.sessions.push(s);
     if (s.conditioning) d.sessions.push(...s.conditioning);
+    d.sessions.push(...condRecords);
     d.activeSession = null;
   }, { immediate: true });
 
   stopRest();
-  showSummary(ctx, s, changes, db.settings.units);
+  showSummary(ctx, s, changes, db.settings.units, condRecords);
 }
 
-function showSummary(ctx, s, changes, unit) {
+function showSummary(ctx, s, changes, unit, condRecords = []) {
   sheet('Session complete', (body, close) => {
     const sets = s.entries.reduce((a, e) => a + e.sets.length, 0);
-    const volume = s.entries.reduce((a, e) => a + e.sets.reduce((x, st) => x + st.weight * st.reps, 0), 0);
+    const warm = s.entries.reduce((a, e) => a + (e.warmupSets || []).length, 0);
+    void countCond;
+    const tonnage = (arr) => arr.reduce((x, st) => x + st.weight * st.reps, 0);
+    // Warm-up tonnage is real work and counts towards volume, but it is shown
+    // separately from the work-set count so the two are never conflated.
+    const volume = s.entries.reduce((a, e) => a + tonnage(e.sets) + tonnage(e.warmupSets || []), 0);
 
     body.append(
       el('div', { class: 'stat-grid' },
         stat(fmtClock(s.durationSec), 'Duration'),
-        stat(sets, 'Sets'),
+        stat(sets, 'Work sets', null, warm ? `+${warm} warm-up` : null),
         stat(`${Math.round(toDisplayWeight(volume, unit))}`, `Volume ${unit}`)
       )
     );
+
+    for (const c of condRecords) {
+      body.append(el('div', { class: 'card tight' },
+        el('div', { class: 'row between' },
+          el('div', { class: 'li-title' }, c.label),
+          el('span', { class: 'pill info' }, `${c.rounds ?? '–'} rounds`)),
+        el('div', { class: 'li-sub', style: { marginTop: '5px' } },
+          `${c.durationMin} min of work${c.rpe ? ` at RPE ${c.rpe}` : ''}. Logged as conditioning.`)));
+    }
 
     if (changes.length) {
       body.append(el('h3', {}, 'What this does to your programme'));

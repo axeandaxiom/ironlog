@@ -194,7 +194,17 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5
 .set-row {
   display: grid; grid-template-columns: 34px 1fr 1fr 56px; gap: 7px; align-items: center;
 }
-.set-idx { font-family: var(--mono); font-size: 13px; color: var(--dim); text-align: center; }
+.set-idx {
+  font-family: var(--mono); font-size: 13px; color: var(--dim); text-align: center;
+  background: none; border: 0; padding: 0; min-height: 46px; position: relative;
+  border-radius: 8px;
+}
+.set-idx:active { background: var(--surface-2); }
+/* A dot means this set carries a comment or a clip. */
+.set-idx.has-media::after {
+  content: ''; position: absolute; top: 9px; right: 3px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+}
 .set-row.warm .set-idx { color: var(--info); }
 .set-input {
   min-height: 46px; text-align: center; font-family: var(--mono); font-size: 16px;
@@ -208,6 +218,13 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5
 .set-row.logged .set-input { opacity: .55; }
 
 .warmup-list { border-left: 2px solid var(--info); padding-left: 10px; margin: 4px 0 12px; }
+/* Warm-up rows are logged like work sets but must read as secondary at a
+   glance, so the eye lands on the work sets first. */
+.warmup-grid { border-left: 2px solid var(--info); padding-left: 8px; }
+.set-row.warm .set-input { font-size: 15px; opacity: .88; }
+.set-row.warm .set-done { font-size: 17px; }
+.set-row.warm .set-idx { color: var(--info); font-size: 11px; }
+.set-row.warm.logged .set-done[aria-pressed="true"] { background: var(--info); border-color: var(--info); color: #08131f; }
 .warmup-row { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 13px; color: var(--muted); padding: 3px 0; }
 
 .plates {
@@ -383,3 +400,25 @@ label { display: block; font-size: 12.5px; color: var(--muted); margin-bottom: 5
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* ---------------------------------------------------------------- rounds */
+.round-wrap { text-align: center; padding: 8px 0 16px; }
+.round-counter { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+.round-clock {
+  font-family: var(--mono); font-size: 76px; font-weight: 700; line-height: 1;
+  letter-spacing: -.03em; margin: 6px 0 2px; font-variant-numeric: tabular-nums;
+}
+.round-phase { font-size: 17px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.round-ring { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-top: 14px; }
+.round-ring i { display: block; height: 100%; background: var(--accent); transition: width .12s linear; }
+
+/* The phase has to be readable across the gym, at a glance, upside down. */
+[data-phase="work"] .round-clock, [data-phase="work"] .round-phase { color: var(--good); }
+[data-phase="work"] .round-ring i { background: var(--good); }
+[data-phase="rest"] .round-clock, [data-phase="rest"] .round-phase { color: var(--info); }
+[data-phase="rest"] .round-ring i { background: var(--info); }
+[data-phase="prep"] .round-clock, [data-phase="prep"] .round-phase { color: var(--warn); }
+[data-phase="prep"] .round-ring i { background: var(--warn); }
+[data-phase="done"] .round-clock, [data-phase="done"] .round-phase { color: var(--accent); }
+
+@media (max-width: 380px) { .round-clock { font-size: 62px; } }

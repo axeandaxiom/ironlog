@@ -57,6 +57,11 @@ function defaultDB() {
       customTests: [],    // user-defined movement tests
       results: [],        // {id, testId, date, side, metrics:{}, raw?, notes}
     },
+    // Your own movements and your own programmes. Both are registered into the
+    // built-in catalogues at boot, so everything downstream — progression,
+    // warm-ups, plate maths, charts — treats them identically to the built-ins.
+    customExercises: [],
+    customPrograms: [],
     prs: {},              // {exerciseId: {weight, reps, date, e1rm}}
   };
 }
@@ -90,6 +95,8 @@ function migrate(data) {
   merged.metrics = { ...fresh.metrics, ...(data.metrics || {}) };
   merged.nutrition = { ...fresh.nutrition, ...(data.nutrition || {}) };
   merged.lab = { ...fresh.lab, ...(data.lab || {}) };
+  merged.customExercises = data.customExercises || [];
+  merged.customPrograms = data.customPrograms || [];
   merged.sessions = data.sessions || [];
   merged.prs = data.prs || {};
   return merged;
@@ -164,6 +171,8 @@ export function importJSON(text, { mode = 'merge' } = {}) {
   cur.nutrition.customFoods = byId(cur.nutrition.customFoods, incoming.nutrition.customFoods);
   cur.lab.customTests = byId(cur.lab.customTests, incoming.lab.customTests);
   cur.lab.results = byId(cur.lab.results, incoming.lab.results);
+  cur.customExercises = byId(cur.customExercises, incoming.customExercises);
+  cur.customPrograms = byId(cur.customPrograms, incoming.customPrograms);
 
   // Program state and PRs are single-valued, so take whichever is further along.
   if ((incoming.sessions.length || 0) >= (cur.sessions.length || 0)) {

@@ -4,6 +4,7 @@ import { el, num, fmtDateLong, fmtClock, lineChart, toDisplayWeight, e1rm } from
 import * as store from '../store.js';
 import { MAIN_LIFTS, exerciseName, findExercise } from '../data/exercises.js';
 import { sheet, confirmSheet } from '../app.js';
+import * as media from '../media.js';
 
 export function renderLog(view, ctx) {
   const db = store.get();
@@ -23,8 +24,9 @@ export function renderLog(view, ctx) {
   const lifts = sessions.filter((s) => s.type === 'lift' || s.type === 'free');
   const cond = sessions.filter((s) => s.type === 'conditioning');
   const totalSets = lifts.reduce((a, s) => a + (s.entries || []).reduce((x, e) => x + e.sets.length, 0), 0);
+  const tonnage = (arr) => (arr || []).reduce((y, st) => y + st.weight * st.reps, 0);
   const totalVolume = lifts.reduce((a, s) =>
-    a + (s.entries || []).reduce((x, e) => x + e.sets.reduce((y, st) => y + st.weight * st.reps, 0), 0), 0);
+    a + (s.entries || []).reduce((x, e) => x + tonnage(e.sets) + tonnage(e.warmupSets), 0), 0);
 
   view.append(el('div', { class: 'stat-grid' },
     st(lifts.length, 'Sessions'),
@@ -119,14 +121,30 @@ function openSession(ctx, s, unit) {
       if (c) body.append(el('div', { class: 'note' }, c.detail));
     } else {
       for (const e of s.entries || []) {
-        const rows = e.sets.map((set, i) =>
+        const warmRows = (e.warmupSets || []).map((set) =>
           el('div', { class: 'warmup-row' },
+            el('span', { style: { color: 'var(--info)' } }, set.label || 'Warm-up'),
+            el('span', {}, `${num(toDisplayWeight(set.weight, unit))} ${unit} × ${set.reps}`)));
+        const rows = e.sets.flatMap((set, i) => {
+          const main = el('div', { class: 'warmup-row' },
             el('span', {}, `Set ${i + 1}`),
-            el('span', {}, `${num(toDisplayWeight(set.weight, unit))} ${unit} × ${set.reps}${set.reps > 0 && set.weight > 0 ? `  ·  e1RM ${num(toDisplayWeight(e1rm(set.weight, set.reps), unit), 0)}` : ''}`)));
+            el('span', {}, `${num(toDisplayWeight(set.weight, unit))} ${unit} × ${set.reps}${set.reps > 0 && set.weight > 0 ? `  ·  e1RM ${num(toDisplayWeight(e1rm(set.weight, set.reps), unit), 0)}` : ''}`));
+          const extras = [];
+          if (set.note) extras.push(el('div', { class: 'li-sub', style: { paddingLeft: '10px' } }, set.note));
+          if (set.media?.length) {
+            extras.push(el('button', { class: 'btn-sm btn-ghost', style: { marginLeft: '6px' },
+              onclick: () => openSetMedia(set, i) },
+              `${set.media.length} attachment${set.media.length === 1 ? '' : 's'}`));
+          }
+          return [main, ...extras];
+        });
         body.append(el('div', { class: 'card tight' },
           el('div', { class: 'row between' },
             el('div', { class: 'li-title' }, exerciseName(e.exerciseId)),
-            e.light && el('span', { class: 'pill info' }, 'Light')),
+            el('div', { class: 'row', style: { gap: '6px' } },
+              e.carriedFrom && el('span', { class: 'pill' }, 'carried'),
+              e.light && el('span', { class: 'pill info' }, 'Light'))),
+          warmRows.length ? el('div', { class: 'warmup-list', style: { marginTop: '6px' } }, warmRows) : null,
           el('div', { style: { marginTop: '6px' } }, rows)));
       }
       if (s.durationSec) {
@@ -145,4 +163,29 @@ function openSession(ctx, s, unit) {
         close(); ctx.refresh();
       } }, 'Delete session'));
   });
+}
+
+
+/** Play back whatever was attached to a set, from the history view. */
+function openSetMedia(set, i) {
+  sheet(`Set ${i + 1} attachments`, (body) => {
+    if (set.note) body.append(el('h3', {}, 'Comment'), el('p', { class: 'sub' }, set.note));
+    for (const m of set.media || []) {
+      const holder = el('div', { class: 'card tight' },
+        el('div', { class: 'li-sub' }, `${m.kind} · ${media.fmtBytes(m.size)}`));
+      body.append(holder);
+      media.objectURL(m.id).then((url) => {
+        if (!url) {
+          holder.append(el('div', { class: 'li-sub dim' },
+            'Missing on this device — media does not travel in the export file.'));
+          return;
+        }
+        holder.append(m.kind === 'video'
+          ? el('video', { src: url, controls: true, playsinline: true, style: { width: '100%', marginTop: '8px', borderRadius: '8px' } })
+          : m.kind === 'photo'
+            ? el('img', { src: url, style: { width: '100%', marginTop: '8px', borderRadius: '8px' } })
+            : el('audio', { src: url, controls: true, style: { width: '100%', marginTop: '8px' } }));
+      });
+    }
+  }, { onClose: () => (set.media || []).forEach((m) => media.releaseURL(m.id)) });
 }

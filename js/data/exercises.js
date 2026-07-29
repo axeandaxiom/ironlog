@@ -21,6 +21,8 @@ export const MAIN_LIFTS = {
     // Novices start light enough to fix form; this is a fraction of bodyweight
     // used only to seed a first-session suggestion.
     seedBwRatio: 0.5,
+    defaultSets: 3,
+    defaultReps: 5,
     cues: [
       'Bar on the rear delts, below the spine of the scapula — not on the traps.',
       'Stance shoulder-width, toes out ~30°. Knees track the toes.',
@@ -42,6 +44,8 @@ export const MAIN_LIFTS = {
     lateIncrement: 1.25,
     resetPct: 0.9,
     seedBwRatio: 0.25,
+    defaultSets: 3,
+    defaultReps: 5,
     cues: [
       'Grip just outside the shoulders, forearms vertical from the front.',
       'Bar on the heels of the palms, over the mid-foot, resting on the delts.',
@@ -63,6 +67,8 @@ export const MAIN_LIFTS = {
     lateIncrement: 1.25,
     resetPct: 0.9,
     seedBwRatio: 0.4,
+    defaultSets: 3,
+    defaultReps: 5,
     cues: [
       'Eyes under the bar. Grip so the forearms are vertical at the chest.',
       'Shoulder blades pinched and down, slight arch, feet planted.',
@@ -84,6 +90,8 @@ export const MAIN_LIFTS = {
     lateIncrement: 2.5,
     resetPct: 0.9,
     seedBwRatio: 0.6,
+    defaultSets: 1,
+    defaultReps: 5,
     cues: [
       'Bar over the mid-foot. Stance narrower than the squat, ~hip-width.',
       'Grip just outside the shins, arms vertical from the front and the side.',
@@ -106,6 +114,8 @@ export const MAIN_LIFTS = {
     lateIncrement: 1.25,
     resetPct: 0.9,
     seedBwRatio: 0.4,
+    defaultSets: 5,
+    defaultReps: 3,
     cues: [
       'Start position is the deadlift, with the back a little more horizontal.',
       'First pull off the floor is deliberate. The speed comes later.',
@@ -117,6 +127,54 @@ export const MAIN_LIFTS = {
     warmup: 'clean',
     setsReps: '5 × 3',
   },
+  rdl: {
+    id: 'rdl',
+    name: 'Romanian Deadlift',
+    short: 'RDL',
+    kind: 'main',
+    bar: true,
+    increment: 2.5,
+    lateIncrement: 1.25,
+    resetPct: 0.9,
+    // Most people RDL somewhere around 60-70 % of their deadlift, and the
+    // limiter is hamstring length long before it is back strength.
+    seedBwRatio: 0.4,
+    defaultSets: 3,
+    defaultReps: 8,
+    cues: [
+      'Start standing, bar at the hips. This is a top-down lift — you do not pull it off the floor.',
+      'Grip just outside the thighs, shoulders slightly ahead of the bar, chest up.',
+      'Soft knees, then hold that knee angle. If the knees keep bending it becomes a bad deadlift.',
+      'Push the hips back. The bar drags down the thighs and stays in contact with the legs.',
+      'Go until the hamstrings stop you — usually mid-shin. The moment the lower back rounds, that is the end of the range, whatever the bar height.',
+      'Drive the hips forward to stand up. Do not lean back at the top.',
+      'Higher reps than the deadlift and considerably lighter. It is a hamstring exercise, not a max-effort pull.',
+    ],
+    warmup: 'rdl',
+    setsReps: '3 × 8',
+  },
+  dip: {
+    id: 'dip',
+    name: 'Dip',
+    short: 'Dips',
+    kind: 'main',
+    bar: false,
+    bodyweight: true,
+    increment: 2.5,
+    lateIncrement: 1.25,
+    resetPct: 0.9,
+    defaultSets: 3,
+    defaultReps: 0,
+    cues: [
+      'Bars just wider than the shoulders. Start locked out, shoulders down and back.',
+      'Slight forward lean loads the chest; staying upright loads the triceps. Pick one and keep it.',
+      'Descend until the upper arm is roughly parallel to the floor. Deeper than that is where shoulders get hurt.',
+      'No bouncing out of the bottom. Control the descent, then drive.',
+      'Once you can do 15 clean reps, hang weight from a belt and treat it as a pressing lift.',
+    ],
+    warmup: 'none',
+    setsReps: '3 × max',
+  },
   chinup: {
     id: 'chinup',
     name: 'Chin-up',
@@ -127,6 +185,8 @@ export const MAIN_LIFTS = {
     increment: 1.25,
     lateIncrement: 1.25,
     resetPct: 0.9,
+    defaultSets: 3,
+    defaultReps: 0,
     cues: [
       'Supinated grip, shoulder-width. Hang from a full stretch.',
       'Chin clears the bar, controlled down to a straight-arm hang.',
@@ -155,6 +215,7 @@ export const ASSISTANCE = [
   { id: 'db-rdl', name: 'Dumbbell Romanian Deadlift', equip: 'dumbbell', target: 'hamstrings', sets: '3 × 8–10', note: 'Hips back, soft knees, bar-path along the legs. Stop at the stretch.' },
   { id: 'db-lunge', name: 'Dumbbell Walking Lunge', equip: 'dumbbell', target: 'legs', sets: '3 × 10/side', note: 'High recovery cost. Do not run these alongside a working squat progression.' },
   { id: 'db-split', name: 'Bulgarian Split Squat', equip: 'dumbbell', target: 'legs', sets: '3 × 8/side', note: 'Exposes left/right asymmetry the squat hides.' },
+  { id: 'liu-raise', name: 'Liu Raise', equip: 'dumbbell', target: 'rear/side delt, shoulder health', sets: '3 × 12\u201320', note: 'The Chinese weightlifting shoulder-health raise. Face down on an incline bench, very light dumbbells hanging straight below you, thumbs up. Sweep the arms out and up in a wide arc to shoulder height, pause, lower under control. Light and strict \u2014 this is built for the overhead position, not for loading. If you press overhead regularly, this is the accessory that keeps the shoulder tolerating it.' },
   { id: 'db-lateral', name: 'Lateral Raise', equip: 'dumbbell', target: 'side delt', sets: '3 × 12–15', note: 'Pure hypertrophy work. Light, strict, no body English.' },
   { id: 'db-curl', name: 'Dumbbell Curl', equip: 'dumbbell', target: 'biceps', sets: '3 × 8–12', note: 'Chins do most of this already. Add only if you want the arm size.' },
   { id: 'db-skull', name: 'Dumbbell Skullcrusher', equip: 'dumbbell', target: 'triceps', sets: '3 × 10–12', note: 'Supports lockout on bench and press.' },
@@ -353,6 +414,71 @@ export const INTERFERENCE_NOTE = {
   medium: 'Keep it on non-lifting days.',
   high: 'Competes directly with recovery. Cut it first if the squat stalls.',
 };
+
+// ---------------------------------------------------------------------------
+// Your own movements.
+//
+// Custom exercises are merged into the catalogues above at boot rather than
+// kept in a parallel list. That is deliberate: every downstream consumer —
+// progression, warm-up ladders, plate maths, the "+ Lift" sheet, the history
+// charts — then treats a movement you invented exactly like one that shipped
+// with the app, with no special cases anywhere.
+// ---------------------------------------------------------------------------
+
+/** Sensible defaults so a half-filled custom exercise still behaves. */
+export function normaliseCustom(ex) {
+  const isMain = ex.kind === 'main';
+  return {
+    increment: 2.5,
+    lateIncrement: 1.25,
+    resetPct: 0.9,
+    defaultSets: 3,
+    defaultReps: isMain ? 5 : 10,
+    warmup: ex.bar ? 'full' : 'none',
+    cues: [],
+    setsReps: `${ex.defaultSets ?? 3} × ${ex.defaultReps ?? (isMain ? 5 : 10)}`,
+    target: '',
+    equip: ex.bar ? 'barbell' : 'other',
+    note: '',
+    ...ex,
+    kind: isMain ? 'main' : 'assistance',
+    custom: true,
+  };
+}
+
+let registered = [];
+
+/**
+ * Re-sync the catalogues with the user's own exercises.
+ * Called at boot and after any edit. Previously registered entries are removed
+ * first so a rename or a delete does not leave a ghost behind.
+ */
+export function registerCustomExercises(list = []) {
+  for (const old of registered) {
+    if (old.kind === 'main') delete MAIN_LIFTS[old.id];
+    else {
+      const i = ASSISTANCE.findIndex((a) => a.id === old.id);
+      if (i >= 0) ASSISTANCE.splice(i, 1);
+    }
+  }
+  registered = list.map(normaliseCustom);
+  for (const ex of registered) {
+    if (ex.kind === 'main') MAIN_LIFTS[ex.id] = ex;
+    else ASSISTANCE.push(ex);
+  }
+  return registered.length;
+}
+
+/** Everything you could put in a workout, for pickers. */
+export function allMovements() {
+  return [
+    ...Object.values(MAIN_LIFTS).map((m) => ({ ...m, group: m.custom ? 'Your lifts' : 'Main lifts' })),
+    ...ASSISTANCE.map((a) => ({
+      ...a,
+      group: a.custom ? 'Your exercises' : `Assistance — ${a.equip}`,
+    })),
+  ];
+}
 
 /** Look up any movement by id across all three catalogs. */
 export function findExercise(id) {
