@@ -182,6 +182,8 @@ function renderPlan(view, ctx, db) {
       el('button', { onclick: () => startFreeSession(ctx, db) }, 'Free session'),
       el('button', { onclick: () => openConditioning(ctx, db) }, 'Conditioning')
     ),
+    el('button', { class: 'btn-block', style: { marginTop: '8px' },
+      onclick: () => openBackdate(ctx, db) }, 'Log a past session'),
     el('h2', {}, 'Make it yours'),
     el('div', { class: 'btn-row' },
       el('button', { onclick: () => openProgramManager(ctx) }, 'Programmes'),
@@ -275,7 +277,7 @@ async function advancePhase(ctx, db) {
 // Session start
 // ---------------------------------------------------------------------------
 
-function startSession(ctx, db, wk) {
+function startSession(ctx, db, wk, date = todayISO()) {
   const entries = wk.items.map((item) => (item.conditioning ? {
     id: uid(),
     exerciseId: item.exerciseId,
@@ -310,7 +312,7 @@ function startSession(ctx, db, wk) {
 
   store.update((d) => {
     d.activeSession = {
-      id: uid(), type: 'lift', date: todayISO(), startedAt: Date.now(),
+      id: uid(), type: 'lift', date, startedAt: Date.now(),
       programId: wk.programId, phase: wk.phase, label: wk.label, cursor: wk.cursor,
       entries: [...entries, ...carried.entries],
       carriedFrom: carried.from, carriedLabel: carried.fromLabel,
@@ -324,14 +326,14 @@ function startSession(ctx, db, wk) {
   ctx.refresh();
 }
 
-function startFreeSession(ctx, db) {
+function startFreeSession(ctx, db, date = todayISO()) {
   // Nothing is programmed, so everything from last time carries — main lifts at
   // their current working weight, accessories at exactly what you used.
   const carried = carryForward(db, { label: 'Free session', items: [] });
 
   store.update((d) => {
     d.activeSession = {
-      id: uid(), type: 'free', date: todayISO(), startedAt: Date.now(),
+      id: uid(), type: 'free', date, startedAt: Date.now(),
       label: 'Free session', entries: carried.entries,
       carriedFrom: carried.from, carriedLabel: carried.fromLabel,
       carriedSameSlot: carried.sameSlot, notes: '',
@@ -340,6 +342,72 @@ function startFreeSession(ctx, db) {
 
   if (carried.names.length) toast(`Starting from ${carried.from}`);
   ctx.refresh();
+}
+
+/**
+ * Log a workout you already did.
+ *
+ * The date is the whole point, so it is chosen before anything else. A session
+ * dated earlier than your most recent one is recorded as history and does not
+ * touch your working weights — see finishSession. Dating it today or later is
+ * simply a normal session.
+ */
+function openBackdate(ctx, db) {
+  sheet('Log a past session', (body, close) => {
+    const dateInput = el('input', { type: 'date', value: todayISO(), max: todayISO() });
+
+    const newest = db.sessions.reduce((a, x) => (x.date > a ? x.date : a), '');
+    const note = el('div', { class: 'note' });
+    const refreshNote = () => {
+      const d = dateInput.value;
+      note.replaceChildren();
+      if (!d) return;
+      if (newest && d < newest) {
+        note.className = 'note warn';
+        note.append(
+          el('b', {}, 'This is older than your most recent session. '),
+          `It will be recorded on ${d} and will show in your history and charts, but it will not change your working weights or move the rotation — your ${newest} session is still the one that decides where you are.`);
+      } else {
+        note.className = 'note';
+        note.append('This is your most recent session, so it progresses your weights as normal.');
+      }
+    };
+    dateInput.addEventListener('change', refreshNote);
+    refreshNote();
+
+    body.append(el('div', { class: 'field' }, el('label', {}, 'Date'), dateInput), note);
+
+    const days = rotationDays(db);
+    if (days.length) {
+      body.append(el('h3', {}, 'Which session was it?'));
+      const list = el('div', { class: 'list' });
+      for (const d of days) {
+        list.append(el('button', { class: 'list-item', onclick: () => {
+          const date = dateInput.value || todayISO();
+          // Build the prescription for that day without disturbing the cursor.
+          const snapshot = { ...db, program: { ...db.program, cursor: d.index } };
+          const wk = nextWorkout(snapshot);
+          close();
+          startSession(ctx, db, wk, date);
+        } },
+          el('div', { class: 'grow' },
+            el('div', { class: 'li-title' }, d.label),
+            el('div', { class: 'li-sub' }, d.summary)),
+          el('span', { class: 'li-right' }, '›')));
+      }
+      body.append(list);
+    }
+
+    body.append(
+      el('button', { class: 'btn-block', style: { marginTop: '10px' }, onclick: () => {
+        const date = dateInput.value || todayISO();
+        close();
+        startFreeSession(ctx, db, date);
+      } }, 'Blank session instead'),
+      el('div', { class: 'note' },
+        'You can change the date again from inside the session if you get it wrong.')
+    );
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -368,6 +436,7 @@ function renderRunner(view, ctx, db) {
       el('div', { class: 'row between' },
         el('div', {},
           el('p', { class: 'workout-title' }, s.label),
+          s.date !== todayISO() && el('span', { class: 'pill warn', style: { marginTop: '4px' } }, s.date),
           el('div', { class: 'muted', dataset: { sessionSummary: '1' }, style: { fontSize: '13px' } },
             summaryText(s))
         ),
@@ -404,9 +473,19 @@ function renderRunner(view, ctx, db) {
     )
   );
 
+  const dateInput = el('input', { type: 'date', value: s.date, max: todayISO() });
+  dateInput.addEventListener('change', () => {
+    if (!dateInput.value) return;
+    store.update((d) => { d.activeSession.date = dateInput.value; });
+    toast(dateInput.value === todayISO() ? 'Dated today' : `Dated ${dateInput.value}`);
+  });
+
   const notes = el('textarea', { placeholder: 'How did it feel? Sleep, technique, anything worth remembering.', value: s.notes || '' });
   notes.addEventListener('change', () => store.update((d) => { d.activeSession.notes = notes.value; }));
-  view.append(el('h2', {}, 'Notes'), notes);
+  view.append(
+    el('h2', {}, 'Session'),
+    el('div', { class: 'field' }, el('label', {}, 'Date'), dateInput),
+    el('h2', {}, 'Notes'), notes);
 
   view.append(
     el('div', { class: 'btn-row', style: { marginTop: '16px' } },
@@ -1006,7 +1085,17 @@ async function finishSession(ctx) {
   // and the next session should start from it — that is the whole point of the
   // log. The rotation guard inside applySession stops it consuming a
   // programme day.
-  const changes = (s.type === 'lift' || s.type === 'free') ? applySession(db, s) : [];
+  // Progression follows the most recent training, not the most recently typed.
+  //
+  // A session you back-date is history: it belongs in the log and the charts,
+  // but it must not reach back and overwrite a working weight you have since
+  // moved past, nor rewind the rotation. Only a session that is genuinely your
+  // latest gets to decide where you are.
+  const newestOther = db.sessions.reduce((a, x) => (x.date > a ? x.date : a), '');
+  const isLatest = !newestOther || s.date >= newestOther;
+  const changes = (s.type === 'lift' || s.type === 'free') && isLatest
+    ? applySession(db, s)
+    : [];
 
   store.update((d) => {
     // A day that was only conditioning leaves no lifting session behind.
@@ -1017,7 +1106,7 @@ async function finishSession(ctx) {
   }, { immediate: true });
 
   stopRest();
-  showSummary(ctx, s, changes, db.settings.units, condRecords);
+  showSummary(ctx, s, changes, db.settings.units, condRecords, { isLatest, newestOther });
 }
 
 /**
@@ -1047,7 +1136,7 @@ function askPending(count) {
   });
 }
 
-function showSummary(ctx, s, changes, unit, condRecords = []) {
+function showSummary(ctx, s, changes, unit, condRecords = [], { isLatest = true, newestOther = '' } = {}) {
   sheet('Session complete', (body, close) => {
     const sets = s.entries.reduce((a, e) => a + e.sets.length, 0);
     const warm = s.entries.reduce((a, e) => a + (e.warmupSets || []).length, 0);
@@ -1072,6 +1161,13 @@ function showSummary(ctx, s, changes, unit, condRecords = []) {
           el('span', { class: 'pill info' }, `${c.rounds ?? '–'} rounds`)),
         el('div', { class: 'li-sub', style: { marginTop: '5px' } },
           `${c.durationMin} min of work${c.rpe ? ` at RPE ${c.rpe}` : ''}. Logged as conditioning.`)));
+    }
+
+    if (!isLatest) {
+      body.append(el('div', { class: 'note warn' },
+        el('b', {}, `Recorded as history on ${s.date}. `),
+        `It is in your log and your charts, but your working weights and the rotation are unchanged — `
+        + `your ${newestOther} session is more recent and still decides where you are.`));
     }
 
     if (changes.length) {

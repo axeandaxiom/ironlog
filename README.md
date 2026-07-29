@@ -39,7 +39,7 @@ certificate, which removes the warning and the LAN requirement entirely.
 open http://localhost:8765/tests.html
 ```
 
-331 assertions covering the progression engine, plate and warm-up maths,
+347 assertions covering the progression engine, plate and warm-up maths,
 warm-up isolation, carry-forward ownership rules, custom exercises and
 programmes, the round timer (including background catch-up), attachment
 storage, nutrition calculations,
@@ -96,6 +96,19 @@ carried by its progression. An accessory has no progression to carry it, so the
 log does: whatever you last used comes back next time, per movement. A weight
 written into a programme only seeds a movement the first time — after that your
 own history governs it. Reps stay the programme's business.
+
+**Log a workout you already did.** "Log a past session" on the training screen
+takes a date first, then the day or a blank session; the date can also be
+changed from inside a running session. A session dated earlier than your most
+recent one is recorded as history — it appears in your log and charts but does
+not reach back and overwrite a working weight you have since moved past, nor
+rewind the rotation. Importing a backlog behaves the same way: programme state
+follows whichever side trained most recently, not whichever has more sessions.
+
+`tools/backlog.py` turns a transcription of a paper notebook into an import
+file. The text format mirrors the notebook so it can be proofread against the
+page, handles a mid-log switch from pounds to kilos with a `# unit:` line, and
+skips anything it cannot read rather than guessing.
 
 **Pick the day you are on.** The rotation advances by itself, but life does
 not follow it — you miss a session, or you want the bag today and the squats

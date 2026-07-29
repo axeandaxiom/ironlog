@@ -164,6 +164,12 @@ export function importJSON(text, { mode = 'merge' } = {}) {
   };
 
   const cur = get();
+  // Captured before the merge: afterwards cur.sessions contains the incoming
+  // ones too, and comparing the two would always be a tie.
+  const newest = (arr) => (arr || []).reduce((a, s) => (s.date > a ? s.date : a), '');
+  const localNewest = newest(cur.sessions);
+  const incomingNewest = newest(incoming.sessions);
+
   cur.sessions = byId(cur.sessions, incoming.sessions).sort((a, b) => (a.date < b.date ? -1 : 1));
   cur.metrics.defs = byId(cur.metrics.defs, incoming.metrics.defs);
   cur.metrics.entries = byId(cur.metrics.entries, incoming.metrics.entries);
@@ -174,8 +180,17 @@ export function importJSON(text, { mode = 'merge' } = {}) {
   cur.customExercises = byId(cur.customExercises, incoming.customExercises);
   cur.customPrograms = byId(cur.customPrograms, incoming.customPrograms);
 
-  // Program state and PRs are single-valued, so take whichever is further along.
-  if ((incoming.sessions.length || 0) >= (cur.sessions.length || 0)) {
+  // Program state is single-valued, so one side has to win — and it must be
+  // decided by recency, not by session count.
+  //
+  // Counting was wrong in exactly the case that matters most: importing a
+  // backlog of old training. Twenty sessions from last year would outnumber
+  // the two on this device and replace your current working weights and your
+  // place in the rotation with whatever the file happened to carry.
+  //
+  // The device that trained most recently is the one whose programme state is
+  // current, whatever the volume of history behind it.
+  if (incomingNewest > localNewest) {
     cur.program = incoming.program;
   }
   for (const [ex, pr] of Object.entries(incoming.prs || {})) {

@@ -1,7 +1,7 @@
 // Service worker: cache-first for the app shell so the gym's dead spot in the
 // basement is a non-event. Bump CACHE when any file below changes.
 
-const CACHE = 'ironlog-v12';
+const CACHE = 'ironlog-v13';
 
 const ASSETS = [
   './',
@@ -62,7 +62,7 @@ self.addEventListener('fetch', (e) => {
   // The test harness is a development artefact, not part of the app. Leaving
   // it out of the cache means edits show up on reload without having to clear
   // storage every time.
-  if (/\/tests\.(html|js)$/.test(url.pathname)) return;
+  if (/\/(tests|syntaxcheck)\.(html|js)$/.test(url.pathname)) return;
 
   // Network-first, cache as fallback.
   //

@@ -1,0 +1,18 @@
+<!DOCTYPE html><meta charset="utf-8"><title>syntax</title><body><pre id="o">checking…</pre>
+<script type="module">
+const mods = [
+  'js/util.js','js/store.js','js/version.js','js/programs.js','js/nutrition.js',
+  'js/sensors.js','js/movement.js','js/timer.js','js/media.js',
+  'js/data/exercises.js','js/data/recipes.js',
+  'js/views/train.js','js/views/log.js','js/views/lab.js','js/views/health.js',
+  'js/views/food.js','js/views/more.js','js/views/build.js','js/views/rounds.js',
+  'js/views/attach.js','js/app.js',
+];
+const out = [];
+for (const m of mods) {
+  try { await import('/' + m); out.push('ok   ' + m); }
+  catch (e) { out.push('FAIL ' + m + '  ->  ' + e.message); }
+}
+document.getElementById('o').textContent = out.join('\n');
+window.__syntax = out.filter(l => l.startsWith('FAIL'));
+</script>

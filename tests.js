@@ -545,6 +545,71 @@ group('Choosing the day of the rotation');
   registerCustomPrograms([]);
 }
 
+group('Logging a past workout');
+{
+  // The rule: progression follows the most recent training, not the most
+  // recently typed. A back-dated session is history.
+  const isLatest = (db, date) => {
+    const newest = db.sessions.reduce((a, x) => (x.date > a ? x.date : a), '');
+    return !newest || date >= newest;
+  };
+
+  const db = freshDB();
+  db.sessions = [{ id: 'recent', type: 'lift', programId: 'ss-novice', date: '2026-07-28', label: 'A',
+    entries: [{ exerciseId: 'squat', sets: [{ weight: 120, reps: 5, done: true }] }] }];
+  db.program.working.squat = 122.5;
+  db.program.cursor = 5;
+
+  ok(!isLatest(db, '2026-07-01'), 'an older date is not the latest session');
+  ok(isLatest(db, '2026-07-28'), 'the same date counts as latest');
+  ok(isLatest(db, '2026-07-30'), 'and a later one certainly does');
+  ok(isLatest(freshDB(), '2020-01-01'), 'with no history at all, anything is the latest');
+
+  // Applying an old session anyway would rewind you — so it must not be applied.
+  const beforeW = db.program.working.squat;
+  const beforeC = db.program.cursor;
+  const old = { label: 'A', type: 'lift', programId: 'ss-novice', date: '2026-07-01',
+    entries: [{ exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: [{ weight: 80, reps: 5, done: true }] }] };
+  if (isLatest(db, old.date)) applySession(db, old);
+  ok(db.program.working.squat === beforeW,
+     'a session from three weeks ago does not drag your working weight back to 80',
+     String(db.program.working.squat));
+  ok(db.program.cursor === beforeC, 'nor rewind the rotation');
+
+  // But it is still history: it belongs in the log and the charts.
+  db.sessions.push({ ...old, id: 'old' });
+  ok(db.sessions.length === 2, 'and it is recorded all the same');
+  ok(lastLogged(db, 'squat').weight === 120,
+     'while "last logged" still means the most recent, not the most recently entered',
+     String(lastLogged(db, 'squat').weight));
+
+  // A session dated today does progress normally.
+  const db2 = freshDB();
+  db2.sessions = [{ id: 'r', type: 'lift', date: '2026-07-28', label: 'A', entries: [] }];
+  const today = { label: 'A', type: 'lift', programId: 'ss-novice', date: '2026-07-29',
+    entries: [{ exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: Array.from({ length: 3 }, () => ({ weight: 100, reps: 5, done: true })) }] };
+  if (isLatest(db2, today.date)) applySession(db2, today);
+  ok(db2.program.working.squat === 102.5,
+     'a session dated today progresses as normal', String(db2.program.working.squat));
+
+  // Back-filling a whole week in order leaves the newest one in charge.
+  const db3 = freshDB();
+  db3.sessions = [];
+  for (const d of ['2026-07-20', '2026-07-22', '2026-07-24']) {
+    const sess = { label: 'A', type: 'lift', programId: 'ss-novice', date: d,
+      entries: [{ exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+        sets: Array.from({ length: 3 }, () => ({ weight: 90, reps: 5, done: true })) }] };
+    if (isLatest(db3, d)) applySession(db3, sess);
+    db3.sessions.push({ ...sess, id: d });
+  }
+  ok(db3.program.working.squat === 92.5,
+     'entering a backlog in date order progresses once per session',
+     String(db3.program.working.squat));
+  ok(db3.sessions.length === 3, 'and records all of them');
+}
+
 group('Texas Method');
 {
   const db = freshDB();
@@ -1670,6 +1735,43 @@ group('Export / import round trip');
     ok(db.lab.results.length === 1, 'lab results de-duplicate by id too');
     ok(db.sessions.every((s, i, a) => i === 0 || a[i - 1].date <= s.date),
        'merged sessions come back in date order');
+
+    // Importing a backlog of OLD training must not touch the programme state
+    // of the device you are currently training on.
+    store.wipe();
+    store.update((d) => {
+      d.program.working = { squat: 120 };
+      d.program.cursor = 7;
+      d.sessions.push({ id: 'today', type: 'lift', date: '2026-07-29', label: 'A', entries: [] });
+    }, { immediate: true });
+
+    const backlog = {
+      schema: 3,
+      program: { id: 'ss-novice', phase: 1, working: { squat: 60 }, fails: {}, cursor: 0, increments: {} },
+      sessions: Array.from({ length: 20 }, (_, i) => ({
+        id: `old${i}`, type: 'lift', date: `2025-03-${String(i + 1).padStart(2, '0')}`,
+        label: 'A', entries: [],
+      })),
+    };
+    store.importJSON(JSON.stringify(backlog), { mode: 'merge' });
+    let db2 = store.get();
+    ok(db2.sessions.length === 21, 'the backlog is merged in', String(db2.sessions.length));
+    ok(db2.program.working.squat === 120,
+       'twenty old sessions do not overwrite your current working weight',
+       String(db2.program.working.squat));
+    ok(db2.program.cursor === 7, 'nor your place in the rotation', String(db2.program.cursor));
+
+    // But a genuine sync from a device you trained on more recently should win.
+    store.importJSON(JSON.stringify({
+      schema: 3,
+      program: { id: 'ss-novice', phase: 1, working: { squat: 130 }, fails: {}, cursor: 9, increments: {} },
+      sessions: [{ id: 'phone', type: 'lift', date: '2026-07-31', label: 'A', entries: [] }],
+    }), { mode: 'merge' });
+    db2 = store.get();
+    ok(db2.program.working.squat === 130,
+       'a session logged more recently elsewhere does carry its programme state',
+       String(db2.program.working.squat));
+    ok(db2.program.cursor === 9, 'including the rotation position');
 
     store.importJSON(JSON.stringify({ schema: 3, sessions: [{ id: 'Z', date: '2026-01-01', entries: [] }] }),
                      { mode: 'replace' });
