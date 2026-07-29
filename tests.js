@@ -4,7 +4,8 @@
 
 import { platesFor, roundTo, symmetryIndex, e1rm, movingAverage, parseNum, numInput } from './js/util.js';
 import { warmupSets, applySession, nextWorkout, PROGRAMS, incrementFor, lastSessionLike, carryForward,
-         registerCustomPrograms, validateProgram, phaseAdvice, programLifts } from './js/programs.js';
+         registerCustomPrograms, validateProgram, phaseAdvice, programLifts,
+         lastLogged, offeredWeight, seedWeight, BW_ADD_WEIGHT_AT } from './js/programs.js';
 import { plan, bmr, calibrate, scaleFood, dayTotals, FOODS } from './js/nutrition.js';
 import { RECIPES, computeMacros } from './js/data/recipes.js';
 import { analyseJump, analyseSway } from './js/sensors.js';
@@ -297,6 +298,152 @@ group('One progression decision per lift per session');
   ok(db.program.working.squat === before + 2.5,
      'two squat entries apply the increment once, not twice',
      `${before} -> ${db.program.working.squat}`);
+}
+
+group('The offered weight follows the log');
+{
+  // Progression must build on what was lifted, not on what was prescribed.
+  const db = freshDB();
+  const wk = nextWorkout(db);
+  ok(wk.items.find((i) => i.exerciseId === 'squat').weight === 100, 'prescribed 100');
+
+  applySession(db, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{
+      exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      // Bar said 100; 97.5 is what actually went on it, all reps made.
+      sets: Array.from({ length: 3 }, () => ({ weight: 97.5, reps: 5, done: true })),
+    }],
+  });
+  ok(db.program.working.squat === 100,
+     'lifting 97.5 for all reps offers 100 next, not 102.5',
+     String(db.program.working.squat));
+
+  // Going heavier than prescribed is picked up too.
+  const db2 = freshDB();
+  applySession(db2, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{
+      exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: Array.from({ length: 3 }, () => ({ weight: 110, reps: 5, done: true })),
+    }],
+  });
+  ok(db2.program.working.squat === 112.5,
+     'and lifting 110 offers 112.5 next', String(db2.program.working.squat));
+
+  // A back-off set must not drag the next prescription down.
+  const db3 = freshDB();
+  applySession(db3, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{
+      exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: [
+        { weight: 100, reps: 5, done: true },
+        { weight: 100, reps: 5, done: true },
+        { weight: 80, reps: 5, done: true },
+      ],
+    }],
+  });
+  ok(db3.program.working.squat === 102.5,
+     'the top work set drives it, not a lighter back-off',
+     String(db3.program.working.squat));
+
+  // Added-weight lifts measure the belt, and zero is a real value there.
+  const db4 = freshDB();
+  db4.program.working.chinup = 5;
+  applySession(db4, {
+    label: 'A', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 0, toFailure: true,
+      sets: [{ weight: 0, reps: 8, done: true }] }],
+  });
+  ok(db4.program.working.chinup === 5,
+     'a bodyweight lift is not reset to zero by an unweighted set',
+     String(db4.program.working.chinup));
+}
+
+group('A free session updates your weights');
+{
+  const db = freshDB();
+  db.program.cursor = 0;
+  const cursorBefore = db.program.cursor;
+
+  // Exactly what the runner produces for a free session.
+  applySession(db, {
+    label: 'Free session', type: 'free',
+    entries: [{
+      exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: Array.from({ length: 3 }, () => ({ weight: 105, reps: 5, done: true })),
+    }],
+  });
+  ok(db.program.working.squat === 107.5,
+     'work logged off-programme still moves the weight on',
+     String(db.program.working.squat));
+  ok(db.program.cursor === cursorBefore,
+     'but it does not consume a day of the rotation',
+     `${cursorBefore} -> ${db.program.cursor}`);
+
+  // A session from a different programme must not advance this one either.
+  const db2 = freshDB();
+  applySession(db2, {
+    label: 'X', type: 'lift', programId: 'some-other-programme',
+    entries: [{ exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+      sets: [{ weight: 100, reps: 5, done: true }] }],
+  });
+  ok(db2.program.cursor === 0, 'nor does a session from another programme');
+}
+
+group('Falling back to the log');
+{
+  const db = freshDB();
+  db.program.working = {};              // nothing set up at all
+  db.sessions = [
+    { id: 's1', date: '2026-07-10', type: 'free', label: 'Free session', entries: [
+      { exerciseId: 'squat', sets: [{ weight: 90, reps: 5, done: true }] }] },
+    { id: 's2', date: '2026-07-24', type: 'free', label: 'Free session', entries: [
+      { exerciseId: 'squat', sets: [
+        { weight: 95, reps: 5, done: true },
+        { weight: 97.5, reps: 3, done: true }] },
+      { exerciseId: 'bench', sets: [{ weight: 80, reps: 5, done: true }] }] },
+  ];
+
+  const last = lastLogged(db, 'squat');
+  ok(last.weight === 97.5 && last.date === '2026-07-24',
+     'finds the top set of the most recent session', JSON.stringify(last));
+  ok(lastLogged(db, 'deadlift') === null, 'and returns nothing for a lift never logged');
+
+  ok(offeredWeight(db, 'squat') === 97.5,
+     'with no working weight, the offer comes from the log',
+     String(offeredWeight(db, 'squat')));
+  ok(offeredWeight(db, 'bench') === 80, 'per lift, independently');
+
+  const wk = nextWorkout(db);
+  ok(wk.items.find((i) => i.exerciseId === 'squat').weight === 97.5,
+     'and the next session is prescribed from it',
+     String(wk.items.find((i) => i.exerciseId === 'squat').weight));
+
+  // A stored working weight still wins — it is the programme's own state.
+  db.program.working.squat = 120;
+  ok(offeredWeight(db, 'squat') === 120,
+     'a working weight takes precedence over history');
+
+  // A lift with no history at all falls back to the bodyweight seed.
+  db.program.working = {};
+  ok(offeredWeight(db, 'deadlift') === seedWeight('deadlift', db.profile, db.settings),
+     'and a lift with no history still gets a sensible starting suggestion');
+
+  // Light days must never be mistaken for what you can lift.
+  db.sessions.push({ id: 's3', date: '2026-07-26', type: 'lift', label: 'Light', entries: [
+    { exerciseId: 'squat', light: true, sets: [{ weight: 60, reps: 5, done: true }] }] });
+  ok(lastLogged(db, 'squat').weight === 97.5,
+     'a light day is skipped when reading back what you can lift',
+     String(lastLogged(db, 'squat').weight));
+
+  // Nor are warm-ups, which live in their own array.
+  db.sessions.push({ id: 's4', date: '2026-07-27', type: 'lift', label: 'A', entries: [
+    { exerciseId: 'squat', warmupSets: [{ weight: 200, reps: 1, done: true }], sets: [] }] });
+  ok(lastLogged(db, 'squat').weight === 97.5,
+     'and a heavy warm-up entry cannot masquerade as a work set',
+     String(lastLogged(db, 'squat').weight));
 }
 
 group('Texas Method');
@@ -737,6 +884,127 @@ group('Your own programmes');
      'clearing custom programmes leaves the built-ins alone');
 }
 
+group('Weighted chins and dips');
+{
+  // Run with a rep target, added load progresses like any other lift.
+  const db = freshDB();
+  db.program.working.chinup = 20;
+  db.program.working.dip = 15;
+
+  applySession(db, {
+    label: 'D2', type: 'lift', programId: 'ss-novice',
+    entries: [
+      { exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 5,
+        sets: Array.from({ length: 3 }, () => ({ weight: 20, reps: 5, done: true })) },
+      { exerciseId: 'dip', prescribedSets: 3, prescribedReps: 5,
+        sets: Array.from({ length: 3 }, () => ({ weight: 15, reps: 5, done: true })) },
+    ],
+  });
+  ok(db.program.working.chinup === 21.25,
+     'weighted chins add load on a completed session', String(db.program.working.chinup));
+  ok(db.program.working.dip === 17.5,
+     'and so do weighted dips', String(db.program.working.dip));
+
+  // Missing reps must behave exactly like a barbell lift.
+  const db2 = freshDB();
+  db2.program.working.chinup = 20;
+  const missed = () => ({
+    label: 'D2', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 5,
+      sets: [{ weight: 20, reps: 3, done: true }, { weight: 20, reps: 2, done: true },
+             { weight: 20, reps: 2, done: true }] }],
+  });
+  applySession(db2, missed());
+  ok(db2.program.working.chinup === 20 && db2.program.fails.chinup === 1,
+     'a missed weighted chin repeats rather than progressing');
+  applySession(db2, missed());
+  applySession(db2, missed());
+  ok(db2.program.working.chinup === 17.5,
+     'and three misses shed 10 % of the added load, rounded to loadable steps',
+     String(db2.program.working.chinup));
+
+  // A reset can never drive added weight negative.
+  const db3 = freshDB();
+  db3.program.working.dip = 1.25;
+  for (let i = 0; i < 3; i++) {
+    applySession(db3, { label: 'D2', type: 'lift', programId: 'ss-novice',
+      entries: [{ exerciseId: 'dip', prescribedSets: 3, prescribedReps: 5,
+        sets: [{ weight: 0, reps: 1, done: true }] }] });
+  }
+  ok(db3.program.working.dip >= 0, 'added load bottoms out at bodyweight, never negative',
+     String(db3.program.working.dip));
+
+  // The weight column is read from the log, so dropping the belt is honoured.
+  const db4 = freshDB();
+  db4.program.working.chinup = 30;
+  applySession(db4, {
+    label: 'D2', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 5,
+      sets: Array.from({ length: 3 }, () => ({ weight: 10, reps: 5, done: true })) }],
+  });
+  ok(db4.program.working.chinup === 11.25,
+     'logging +10 when the app said +30 builds from the +10 you actually did',
+     String(db4.program.working.chinup));
+
+  // To-failure mode still exists for someone below their first weighted rep.
+  const db5 = freshDB();
+  db5.program.working.chinup = 0;
+  applySession(db5, {
+    label: 'D2', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 0, toFailure: true,
+      sets: [{ weight: 0, reps: 8, done: true }] }],
+  });
+  ok(db5.program.working.chinup === 0,
+     'to failure below the threshold holds at bodyweight', String(db5.program.working.chinup));
+  applySession(db5, {
+    label: 'D2', type: 'lift', programId: 'ss-novice',
+    entries: [{ exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 0, toFailure: true,
+      sets: [{ weight: 0, reps: BW_ADD_WEIGHT_AT + 1, done: true }] }],
+  });
+  ok(db5.program.working.chinup > 0,
+     `and clearing ${BW_ADD_WEIGHT_AT} starts the load`, String(db5.program.working.chinup));
+}
+
+group('Programme slots: percentage, added weight, prescribed weight');
+{
+  registerCustomPrograms([{
+    id: 'p-fields', name: 'Field test', source: 'Your own', custom: true,
+    frequency: '', blurb: '',
+    phases: { 1: { name: 'S', note: '', advanceWhen: '', rotation: [
+      { label: 'D', items: [
+        { ex: 'squat', sets: 2, reps: 5, pctOfWorking: 0.8, light: true },
+        { ex: 'chinup', sets: 3, reps: 5, startWeight: 20 },
+        { ex: 'liu-raise', sets: 3, reps: 15, weight: 6 },
+      ] } ] } },
+  }]);
+  const db = freshDB();
+  db.program.id = 'p-fields';
+  delete db.program.working.chinup;
+
+  const wk = nextWorkout(db);
+  const [sq, chin, liu] = wk.items;
+  ok(sq.light === true && sq.weight === roundTo(100 * 0.8, 2.5),
+     'a percentage still drives a loaded lift', String(sq.weight));
+  ok(chin.weight === 20 && chin.bodyweight,
+     'a bodyweight lift is seeded from its added-weight field', String(chin.weight));
+  ok(liu.weight === 6 && liu.assistance,
+     'accessory work is prescribed at the weight the programme states', String(liu.weight));
+
+  // The seed only applies until there is real history.
+  db.program.working.chinup = 25;
+  ok(nextWorkout(db).items[1].weight === 25,
+     'once the lift has a working weight the seed is ignored',
+     String(nextWorkout(db).items[1].weight));
+
+  // Validation rejects a percentage on a bodyweight lift.
+  const bad = { name: 'X', phases: { 1: { rotation: [
+    { label: 'D', items: [{ ex: 'chinup', sets: 3, reps: 5, pctOfWorking: 0.8 }] }] } } };
+  ok(validateProgram(bad).some((m) => m.includes('percentage means nothing')),
+     'and a percentage on a chin-up is caught', validateProgram(bad).join(' '));
+
+  registerCustomPrograms([]);
+}
+
 group('The four-day preset');
 {
   const p = PROGRAMS['tv-4day'];
@@ -759,7 +1027,9 @@ group('The four-day preset');
      'day 2 is chins, dips, Liu raises', d2.items.map((i) => i.exerciseId).join(','));
   ok(d2.items[0].bodyweight && d2.items[1].bodyweight,
      'chins and dips are bodyweight lifts that take added weight');
-  ok(d2.items[0].toFailure && d2.items[1].toFailure, 'and both run to failure');
+  ok(!d2.items[0].toFailure && !d2.items[1].toFailure,
+     'and both run weighted for a rep target, not to failure');
+  ok(d2.items[0].reps === 5 && d2.items[1].reps === 5, 'sets of five');
 
   db.program.cursor = 2;
   const d3 = nextWorkout(db);

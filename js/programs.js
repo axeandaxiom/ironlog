@@ -8,6 +8,9 @@
 // only tells you when the criteria are met.
 
 import { MAIN_LIFTS, exerciseName } from './data/exercises.js';
+
+/** Reps at bodyweight that earn you the right to start adding load. */
+export const BW_ADD_WEIGHT_AT = 15;
 import { roundTo, platesFor, uid } from './util.js';
 
 // ---------------------------------------------------------------------------
@@ -114,16 +117,16 @@ export const PROGRAMS = {
       1: {
         name: 'Standard',
         note:
-          'Squat twice per rotation, pull heavy once and light once. Chins and dips carry their own added weight and progress like any other lift. The bag day is conditioning — it is not competing with the barbell work as long as it stays technical.',
+          'Squat twice per rotation, pull heavy once and light once. Chins and dips run weighted for sets of five and progress on added load exactly like a barbell lift — a belt, a dip chain, or a dumbbell between the feet. If you cannot yet make five weighted reps, set the added weight to zero and change the target to 0 reps to run them to failure instead, and the app will start adding load once you clear fifteen.',
         rotation: [
           { label: 'Day 1 — Squat / Press / Pull', items: [
             { ex: 'squat', sets: 3, reps: 5 },
             { ex: 'press', sets: 3, reps: 5 },
             { ex: 'deadlift', sets: 1, reps: 5 },
           ] },
-          { label: 'Day 2 — Bodyweight', items: [
-            { ex: 'chinup', sets: 3, reps: 0, toFailure: true },
-            { ex: 'dip', sets: 3, reps: 0, toFailure: true },
+          { label: 'Day 2 — Weighted Chins / Dips', items: [
+            { ex: 'chinup', sets: 3, reps: 5 },
+            { ex: 'dip', sets: 3, reps: 5 },
             { ex: 'liu-raise', sets: 3, reps: 15 },
           ] },
           { label: 'Day 3 — Bag', items: [
@@ -240,6 +243,9 @@ export function validateProgram(p) {
         return;
       }
       if (!it.ex) problems.push(`"${day.label}" has an empty exercise slot.`);
+      if (it.pctOfWorking && MAIN_LIFTS[it.ex]?.bodyweight) {
+        problems.push(`"${day.label}": a percentage means nothing on ${exerciseName(it.ex)} — use added weight instead.`);
+      }
       if (!(it.sets > 0)) problems.push(`"${day.label}": sets must be at least 1.`);
       if (it.reps < 0) problems.push(`"${day.label}": reps cannot be negative.`);
     });
@@ -344,14 +350,15 @@ export function nextWorkout(db) {
 
     const lift = MAIN_LIFTS[exId];
     if (!lift) {
-      // Programmed assistance (back extensions on Texas volume day).
+      // Programmed assistance. There is no progression behind it, so whatever
+      // weight the programme specifies is simply what it prescribes each time.
       return {
         exerciseId: exId, sets: item.sets, reps: item.reps,
-        weight: null, assistance: true, warmup: [],
+        weight: item.weight ?? null, assistance: true, warmup: [],
       };
     }
 
-    const working = prog.working[exId] ?? seedWeight(exId, db.profile, db.settings);
+    const working = offeredWeight(db, exId, item.startWeight);
     let weight = working;
     if (item.pctOfWorking) {
       const smallest = Math.min(...db.settings.plates) * 2;
@@ -364,7 +371,10 @@ export function nextWorkout(db) {
       reps: item.reps,
       toFailure: !!item.toFailure,
       light: !!item.light,
-      weight: lift.bodyweight ? (prog.working[exId] || 0) : weight,
+      // Bodyweight lifts go through offeredWeight like everything else, or a
+      // programme's starting added weight and the log fallback would never
+      // reach them.
+      weight: lift.bodyweight ? working : weight,
       bodyweight: !!lift.bodyweight,
       increment: incrementFor(prog, exId),
       warmup: lift.bodyweight || item.light ? [] : warmupSets(weight, lift.warmup, db.settings),
@@ -494,6 +504,48 @@ export function carryForward(db, wk) {
   };
 }
 
+/**
+ * What you actually last lifted for a movement.
+ *
+ * The log is the source of truth for where you are. A working weight can drift
+ * from reality — you deload by hand, you take three weeks off, you log in a
+ * free session the programme never saw — and when it does, the log is right
+ * and the stored number is wrong.
+ *
+ * Returns the top completed work set, most recent session first. Warm-ups and
+ * light days are excluded: neither tells you what you can lift.
+ */
+export function lastLogged(db, exerciseId) {
+  const sessions = [...(db.sessions || [])].sort((a, b) => (a.date < b.date ? 1 : -1));
+  for (const s of sessions) {
+    for (const e of s.entries || []) {
+      if (e.exerciseId !== exerciseId || e.light) continue;
+      const done = (e.sets || []).filter((x) => x.done !== false);
+      if (!done.length) continue;
+      const top = Math.max(...done.map((x) => x.weight || 0));
+      const topSet = done.find((x) => (x.weight || 0) === top) || done[0];
+      return { weight: top, reps: topSet.reps, date: s.date, sets: done.length, label: s.label };
+    }
+  }
+  return null;
+}
+
+/**
+ * The weight to offer next for a lift, in order of trustworthiness:
+ * the programme's working weight, then what you last actually lifted, then a
+ * bodyweight-scaled guess for a lift with no history at all.
+ */
+export function offeredWeight(db, exId, startWeight = null) {
+  const working = db.program.working[exId];
+  if (working != null) return working;
+  const last = lastLogged(db, exId);
+  if (last && last.weight > 0) return last.weight;
+  // A programme can seed a lift it has never seen — but only as a starting
+  // point. Once you have logged anything, the log and the progression own it.
+  if (startWeight != null) return startWeight;
+  return seedWeight(exId, db.profile, db.settings);
+}
+
 // ---------------------------------------------------------------------------
 // Progression
 // ---------------------------------------------------------------------------
@@ -531,21 +583,44 @@ export function applySession(db, session) {
       ? true // chins are taken to failure — there is nothing to miss
       : done.length >= entry.prescribedSets && done.every((s) => s.reps >= prescribedReps);
 
-    const current = prog.working[entry.exerciseId] ?? entry.sets[0].weight;
+    // Build on the weight actually moved, not the weight that was prescribed.
+    // If the bar said 100 and you did 97.5 for all your reps, the next session
+    // is 100 — not 102.5. The set you logged is the fact; the prescription was
+    // only a plan. Added-weight lifts are the exception: their `weight` is the
+    // load hanging off a belt, which is legitimately zero.
+    const topDone = Math.max(0, ...done.map((x) => x.weight || 0));
+    // For a bodyweight lift the weight column is the load hanging off a belt,
+    // and zero is a legitimate value there — so when it is being run as a
+    // weighted lift, read it straight from the log like any other. Only the
+    // to-failure mode falls back to the stored number, because a set taken to
+    // failure carries no target to compare against.
+    const current = lift.bodyweight
+      ? (entry.toFailure ? (prog.working[entry.exerciseId] ?? 0) : topDone)
+      : (topDone > 0 ? topDone : (prog.working[entry.exerciseId] ?? entry.sets[0].weight));
     const inc = incrementFor(prog, entry.exerciseId);
 
     if (success) {
       prog.fails[entry.exerciseId] = 0;
-      if (lift.bodyweight) {
-        // Chins: progress by added load only once the rep target is cleared.
+      if (lift.bodyweight && entry.toFailure) {
+        // Sets to failure: there is no rep target to hit, so the trigger for
+        // adding load is clearing the threshold. This is the mode for someone
+        // still building towards their first weighted rep.
         const best = Math.max(...done.map((s) => s.reps));
-        if (best >= 15) {
+        if (best >= BW_ADD_WEIGHT_AT) {
           prog.working[entry.exerciseId] = roundTo(current + inc, 1.25);
           changes.push({ ex: entry.exerciseId, type: 'up', from: current, to: prog.working[entry.exerciseId],
-            why: `${best} reps clears 15 — start adding weight.` });
+            why: `${best} reps clears ${BW_ADD_WEIGHT_AT} — start adding weight.` });
         } else {
-          changes.push({ ex: entry.exerciseId, type: 'hold', why: `${best} reps. Add weight at 15.` });
+          changes.push({ ex: entry.exerciseId, type: 'hold',
+            why: `${best} reps. Weight goes on at ${BW_ADD_WEIGHT_AT}.` });
         }
+      } else if (lift.bodyweight) {
+        // Run with a rep target, a chin-up or a dip is just a pressing or
+        // pulling lift whose bar happens to be your own body. The added load
+        // progresses on exactly the same rules as a barbell lift.
+        prog.working[entry.exerciseId] = roundTo(current + inc, 1.25);
+        changes.push({ ex: entry.exerciseId, type: 'up', from: current, to: prog.working[entry.exerciseId],
+          why: `All reps at ${current > 0 ? `+${current} kg` : 'bodyweight'}. +${inc} kg added.` });
       } else if (def.id === 'texas-method') {
         // Weekly, and only off the intensity day.
         if (session.label === 'Intensity') {
@@ -566,8 +641,12 @@ export function applySession(db, session) {
       const missed = entry.prescribedSets * prescribedReps - done.reduce((a, s) => a + s.reps, 0);
 
       if (fails >= 3) {
-        // Three misses at the same weight is the standard reset trigger.
-        const reset = roundTo(current * lift.resetPct, smallest);
+        // Three misses at the same weight is the standard reset trigger. On a
+        // bodyweight lift that means shedding added load, and it bottoms out
+        // at bodyweight rather than going negative.
+        const reset = lift.bodyweight
+          ? Math.max(0, roundTo(current * lift.resetPct, 1.25))
+          : roundTo(current * lift.resetPct, smallest);
         prog.working[entry.exerciseId] = reset;
         prog.fails[entry.exerciseId] = 0;
         prog.fails[`${entry.exerciseId}.resets`] = (prog.fails[`${entry.exerciseId}.resets`] || 0) + 1;
@@ -580,7 +659,12 @@ export function applySession(db, session) {
     }
   }
 
-  prog.cursor = (prog.cursor || 0) + 1;
+  // A free or off-programme session updates your weights but must not consume
+  // a slot in the rotation — otherwise logging an extra squat day silently
+  // skips the day you were meant to do next.
+  if (session.programId && session.programId === prog.id) {
+    prog.cursor = (prog.cursor || 0) + 1;
+  }
   const rotLen = (def.phases[prog.phase] || def.phases[1]).rotation.length;
   if (def.id === 'texas-method' && prog.cursor % rotLen === 0) {
     prog.tmWeek = (prog.tmWeek || 0) + 1;
@@ -600,7 +684,10 @@ export function phaseAdvice(db) {
   if (!phase) return null;
 
   const sessions = db.sessions.filter((s) => s.type === 'lift' && s.programId === prog.id);
-  const weeks = sessions.length / 3;
+  // Sessions per week comes from the rotation, not a hardcoded three — a
+  // four-day rotation would otherwise report a third more weeks than elapsed.
+  const perWeek = Math.max(1, (def.phases[prog.phase] || def.phases[1]).rotation.length);
+  const weeks = sessions.length / perWeek;
   const resets = Object.entries(prog.fails)
     .filter(([k]) => k.endsWith('.resets'))
     .reduce((a, [, v]) => a + v, 0);

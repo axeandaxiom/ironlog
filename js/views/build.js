@@ -8,7 +8,7 @@
 import { el, uid, num, toast, numInput, parseNum, toDisplayWeight, fromDisplayWeight } from '../util.js';
 import * as store from '../store.js';
 import {
-  MAIN_LIFTS, ASSISTANCE, EQUIPMENT, allMovements, findExercise, exerciseName,
+  MAIN_LIFTS, ASSISTANCE, CONDITIONING, EQUIPMENT, allMovements, findExercise, exerciseName,
 } from '../data/exercises.js';
 import {
   PROGRAMS, newCustomProgram, newProgramDay, newProgramItem, validateProgram,
@@ -218,7 +218,14 @@ export function openProgramManager(ctx) {
             p.custom ? el('span', { class: 'pill', style: { marginLeft: '7px' } }, 'yours') : null),
           el('div', { class: 'li-sub' }, `${p.source} · ${days || Object.keys(p.phases).length} day${days === 1 ? '' : 's'}`)),
         el('div', { class: 'row', style: { gap: '6px' } },
-          p.custom && el('button', { class: 'btn-sm btn-ghost', onclick: () => { close(); openProgramBuilder(ctx, p); } }, 'Edit'),
+          // Every programme is editable. A built-in forks into your own copy on
+          // save rather than being overwritten, so the reference version stays
+          // intact and you can always get back to it.
+          el('button', { class: 'btn-sm btn-ghost', onclick: () => {
+            close();
+            if (p.custom) openProgramBuilder(ctx, p);
+            else openProgramBuilder(ctx, null, p.id, { fork: true });
+          } }, 'Edit'),
           !active && el('button', { class: 'btn-sm', onclick: async () => {
             const ok = await confirmSheet('Switch programme?',
               'Your working weights and history are kept. The rotation starts again at the first day.', 'Switch');
@@ -241,23 +248,41 @@ export function openProgramManager(ctx) {
   });
 }
 
-export function openProgramBuilder(ctx, existing, copyFromId = null) {
-  sheet(existing ? existing.name || 'Programme' : 'New programme', (body, close) => {
+export function openProgramBuilder(ctx, existing, copyFromId = null, { fork = false } = {}) {
+  const source = copyFromId ? PROGRAMS[copyFromId] : null;
+  const title = existing ? (existing.name || 'Programme')
+    : fork && source ? `Edit ${source.name}`
+      : source ? 'Copy programme' : 'New programme';
+
+  sheet(title, (body, close) => {
     // Deep clone so an abandoned edit changes nothing.
     let prog;
     if (existing) {
       prog = JSON.parse(JSON.stringify(existing));
-    } else if (copyFromId && PROGRAMS[copyFromId]) {
-      const src = JSON.parse(JSON.stringify(PROGRAMS[copyFromId]));
+    } else if (source) {
+      const src = JSON.parse(JSON.stringify(source));
+      // A phase-based built-in flattens to the phase you are actually running,
+      // because a programme you edit has one rotation, not three.
+      const phase = src.phases[ctx.phase || 1] || src.phases[1];
       prog = {
         ...newCustomProgram(),
-        name: `${src.name} (my version)`,
+        // Forking keeps the name; an explicit copy marks itself as a duplicate.
+        name: fork ? src.name : `${src.name} (my version)`,
         frequency: src.frequency,
         blurb: src.blurb,
-        phases: { 1: { name: 'Standard', note: src.phases[1].note || '', rotation: src.phases[1].rotation, advanceWhen: '' } },
+        phases: { 1: { name: 'Standard', note: phase.note || '', rotation: phase.rotation, advanceWhen: '' } },
       };
     } else {
       prog = newCustomProgram();
+    }
+
+    if (fork && source) {
+      body.append(el('div', { class: 'note accent' },
+        el('b', {}, `This saves as your own copy of ${source.name}. `),
+        `The original stays in the list untouched, so you can always go back to it. `
+        + (Object.keys(source.phases).length > 1
+          ? `It has ${Object.keys(source.phases).length} phases; you are editing the one you are currently on, and your copy will have a single rotation.`
+          : '')));
     }
 
     const rotation = prog.phases[1].rotation;
@@ -282,8 +307,14 @@ export function openProgramBuilder(ctx, existing, copyFromId = null) {
           items.replaceChildren();
           if (!day.items.length) items.append(el('p', { class: 'sub' }, 'No exercises on this day.'));
           day.items.forEach((it, ii) => {
+            // A conditioning slot is rounds and minutes. Rendering it as an
+            // exercise row would default its picker to a squat, and saving
+            // would silently turn a bag day into a squat day.
+            if (it.conditioningId) {
+              items.append(conditioningRow(it, () => { day.items.splice(ii, 1); drawItems(); }));
+              return;
+            }
             const pick = movementSelect(it.ex);
-            pick.addEventListener('change', () => { it.ex = pick.value; });
 
             const sets = numInput({ decimal: false, value: String(it.sets) });
             sets.addEventListener('change', () => { it.sets = Math.max(1, Math.round(parseNum(sets)) || 1); });
@@ -291,11 +322,62 @@ export function openProgramBuilder(ctx, existing, copyFromId = null) {
             const reps = numInput({ decimal: false, value: String(it.reps) });
             reps.addEventListener('change', () => { it.reps = Math.max(0, Math.round(parseNum(reps)) || 0); });
 
-            const pct = numInput({ value: it.pctOfWorking ? String(Math.round(it.pctOfWorking * 100)) : '' , placeholder: '100' });
-            pct.addEventListener('change', () => {
-              const v = parseNum(pct);
-              if (Number.isNaN(v) || v >= 100) { delete it.pctOfWorking; delete it.light; }
-              else { it.pctOfWorking = v / 100; it.light = v < 90; }
+            // The third field means different things for different movements,
+            // so it changes rather than offering a number that cannot apply.
+            // A percentage of your top set is meaningless on a chin-up; what
+            // you want there is the weight hanging off the belt.
+            const third = el('div');
+            const drawThird = () => {
+              const lift = MAIN_LIFTS[it.ex];
+              const unit = store.get().settings.units;
+              third.replaceChildren();
+
+              if (lift && lift.bodyweight) {
+                delete it.pctOfWorking; delete it.light;
+                const add = numInput({
+                  value: it.startWeight != null ? num(toDisplayWeight(it.startWeight, unit)) : '',
+                  placeholder: '0',
+                });
+                add.addEventListener('change', () => {
+                  const v = parseNum(add);
+                  if (Number.isNaN(v)) delete it.startWeight;
+                  else it.startWeight = fromDisplayWeight(Math.max(0, v), unit);
+                });
+                third.append(el('label', {}, `+${unit} start`), add);
+              } else if (lift) {
+                delete it.startWeight;
+                const pct = numInput({
+                  value: it.pctOfWorking ? String(Math.round(it.pctOfWorking * 100)) : '',
+                  placeholder: '100',
+                });
+                pct.addEventListener('change', () => {
+                  const v = parseNum(pct);
+                  if (Number.isNaN(v) || v >= 100) { delete it.pctOfWorking; delete it.light; }
+                  else { it.pctOfWorking = v / 100; it.light = v < 90; }
+                });
+                third.append(el('label', {}, '% of top'), pct);
+              } else {
+                // Accessory work has no progression, so the programme simply
+                // states the weight.
+                delete it.pctOfWorking; delete it.light; delete it.startWeight;
+                const w = numInput({
+                  value: it.weight != null ? num(toDisplayWeight(it.weight, unit)) : '',
+                  placeholder: unit,
+                });
+                w.addEventListener('change', () => {
+                  const v = parseNum(w);
+                  if (Number.isNaN(v)) delete it.weight;
+                  else it.weight = fromDisplayWeight(Math.max(0, v), unit);
+                });
+                third.append(el('label', {}, `Weight ${unit}`), w);
+              }
+            };
+            drawThird();
+
+            pick.addEventListener('change', () => {
+              it.ex = pick.value;
+              // Swapping a squat for a chin-up must swap the field with it.
+              drawThird();
             });
 
             items.append(el('div', { class: 'card tight', style: { marginBottom: '0' } },
@@ -306,7 +388,7 @@ export function openProgramBuilder(ctx, existing, copyFromId = null) {
               el('div', { class: 'grid3' },
                 el('div', {}, el('label', {}, 'Sets'), sets),
                 el('div', {}, el('label', {}, 'Reps'), reps),
-                el('div', {}, el('label', {}, '% of top'), pct))));
+                third)));
           });
         };
         drawItems();
@@ -319,10 +401,15 @@ export function openProgramBuilder(ctx, existing, copyFromId = null) {
             el('button', { class: 'btn-sm btn-ghost', 'aria-label': 'Remove day',
               onclick: () => { rotation.splice(di, 1); drawDays(); } }, '✕')),
           items,
-          el('button', { class: 'btn-sm btn-block', style: { marginTop: '9px' }, onclick: () => {
-            day.items.push(newProgramItem('squat', 3, 5));
-            drawItems();
-          } }, '+ Exercise')));
+          el('div', { class: 'btn-row', style: { marginTop: '9px' } },
+            el('button', { class: 'btn-sm', onclick: () => {
+              day.items.push(newProgramItem('squat', 3, 5));
+              drawItems();
+            } }, '+ Exercise'),
+            el('button', { class: 'btn-sm', onclick: () => {
+              day.items.push({ conditioningId: 'box-bag-int', rounds: 12, minutes: 3, restSec: 60 });
+              drawItems();
+            } }, '+ Conditioning'))));
       });
     };
     drawDays();
@@ -334,7 +421,10 @@ export function openProgramBuilder(ctx, existing, copyFromId = null) {
 
       el('h3', {}, 'Training days'),
       el('div', { class: 'note' },
-        'The app cycles through these in order, one per session. Leave "% of top" blank for a normal working weight; set it to 80 for a light day, or 90 for a volume day. Anything under 90 % is treated as a light day and does not drive the progression.'),
+        'The app cycles through these in order, one per session. The last column changes with the movement: '
+        + 'a loaded lift takes a percentage of your top set — blank for a normal working weight, 80 for a light day, 90 for a volume day, and anything under 90 is treated as light and does not drive the progression. '
+        + 'A chin-up or dip takes the weight added to your bodyweight instead, which only seeds the lift the first time — after that the progression owns it. '
+        + 'Accessory work has no progression, so its number is simply the weight prescribed every session.'),
       daysBox,
       el('button', { class: 'btn-block', style: { marginTop: '10px' }, onclick: () => {
         rotation.push(newProgramDay(`Day ${rotation.length + 1}`));
@@ -376,7 +466,19 @@ export function openProgramBuilder(ctx, existing, copyFromId = null) {
       close();
       toast(existing ? 'Programme saved' : `${prog.name} created`, 'good');
 
-      if (!existing) {
+      const wasRunning = fork && copyFromId && store.get().program.id === copyFromId;
+      if (wasRunning) {
+        // You were running the programme you just edited — switch to the copy,
+        // keeping your place in the rotation so the edit does not cost you a day.
+        store.update((d) => {
+          const cursor = d.program.cursor;
+          d.program.id = prog.id;
+          d.program.phase = 1;
+          d.program.cursor = cursor % prog.phases[1].rotation.length;
+        });
+        toast(`Now running your version of ${prog.name}`, 'good');
+        ctx.refresh();
+      } else if (!existing) {
         sheet('Use it now?', (b2, close2) => {
           b2.append(
             el('p', { class: 'sub' }, `${prog.name} is saved. Switch to it now, or keep running ${PROGRAMS[store.get().program.id]?.name}.`),
@@ -410,6 +512,39 @@ export function openProgramBuilder(ctx, existing, copyFromId = null) {
       } }, 'Delete programme'));
     }
   });
+}
+
+/** A rounds-and-minutes slot inside a programme day. */
+function conditioningRow(it, onRemove) {
+  const pick = el('select', {});
+  for (const sport of [...new Set(CONDITIONING.map((c) => c.sport))]) {
+    const og = el('optgroup', { label: sport });
+    for (const c of CONDITIONING.filter((x) => x.sport === sport)) {
+      og.append(el('option', { value: c.id }, c.name));
+    }
+    pick.append(og);
+  }
+  pick.value = it.conditioningId;
+  pick.addEventListener('change', () => { it.conditioningId = pick.value; });
+
+  const rounds = numInput({ decimal: false, value: String(it.rounds ?? 12) });
+  rounds.addEventListener('change', () => { it.rounds = Math.max(1, Math.round(parseNum(rounds)) || 1); });
+
+  const minutes = numInput({ decimal: false, value: String(it.minutes ?? 3) });
+  minutes.addEventListener('change', () => { it.minutes = Math.max(1, Math.round(parseNum(minutes)) || 1); });
+
+  const rest = numInput({ decimal: false, value: String(it.restSec ?? 60) });
+  rest.addEventListener('change', () => { it.restSec = Math.max(0, Math.round(parseNum(rest)) || 0); });
+
+  return el('div', { class: 'card tight', style: { marginBottom: '0' } },
+    el('div', { class: 'row', style: { gap: '8px', marginBottom: '8px' } },
+      el('div', { class: 'grow' }, pick),
+      el('span', { class: 'pill info' }, 'rounds'),
+      el('button', { class: 'btn-sm btn-ghost', 'aria-label': 'Remove', onclick: onRemove }, '✕')),
+    el('div', { class: 'grid3' },
+      el('div', {}, el('label', {}, 'Rounds'), rounds),
+      el('div', {}, el('label', {}, 'Minutes'), minutes),
+      el('div', {}, el('label', {}, 'Rest s'), rest)));
 }
 
 /** A <select> of every movement, grouped, for programme building. */

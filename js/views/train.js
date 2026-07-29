@@ -9,7 +9,8 @@
 import { el, $, uid, todayISO, num, fmtClock, buzz, toast, platesFor, e1rm, toDisplayWeight, fromDisplayWeight, numInput, parseNum } from '../util.js';
 import * as store from '../store.js';
 import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, INTERFERENCE_NOTE, findExercise, exerciseName, EQUIPMENT, SPORTS } from '../data/exercises.js';
-import { PROGRAMS, nextWorkout, applySession, phaseAdvice, seedWeight, warmupSets, carryForward } from '../programs.js';
+import { PROGRAMS, nextWorkout, applySession, phaseAdvice, seedWeight, warmupSets, carryForward,
+         lastLogged, offeredWeight, programLifts } from '../programs.js';
 import { startRest, stopRest, sheet, confirmSheet } from '../app.js';
 import { openProgramManager, openExerciseManager, openProgramBuilder } from './build.js';
 import { openRoundTimer, openRoundSettings } from './rounds.js';
@@ -75,17 +76,26 @@ function renderPlan(view, ctx, db) {
     const target = item.conditioning
       ? `${item.rounds} × ${item.minutes} min`
       : item.bodyweight
-        ? (item.weight ? `+${num(toDisplayWeight(item.weight, unit))} ${unit} × ${item.sets} × max` : `${item.sets} × max`)
+        ? `${item.weight ? `BW + ${num(toDisplayWeight(item.weight, unit))} ${unit}` : 'BW'}`
+          + ` × ${item.sets} × ${item.toFailure || !item.reps ? 'max' : item.reps}`
         // Assistance carries no working weight, so showing "– kg" would just
         // look broken. Sets and reps are the whole prescription.
         : item.weight == null
           ? `${item.sets} × ${item.reps}`
           : `${num(toDisplayWeight(item.weight, unit))} ${unit} × ${item.sets} × ${item.reps}`;
+    // Ground every prescription in what you actually did, so the number on
+    // screen is never a mystery.
+    const last = item.conditioning ? null : lastLogged(db, item.exerciseId);
+    const lastLine = last && last.weight > 0
+      ? `Last: ${num(toDisplayWeight(last.weight, unit))} ${unit} × ${last.reps} on ${last.date}`
+      : last ? `Last: ${last.sets} × ${last.reps} on ${last.date}` : null;
+
     view.append(
       el('div', { class: 'card tight' },
         el('div', { class: 'row between' },
-          el('div', {},
+          el('div', { class: 'grow' },
             el('div', { class: 'li-title' }, ex?.name || item.exerciseId),
+            lastLine && el('div', { class: 'li-sub' }, lastLine),
             item.light && el('span', { class: 'pill info', style: { marginTop: '4px' } }, 'Light day — 80 %')
           ),
           el('div', { class: 'li-right', style: { fontSize: '15px', color: 'var(--text)' } }, target)
@@ -153,7 +163,9 @@ function stat(val, lbl, kind = null, sub = null) {
 function openWeightSetup(ctx, db) {
   sheet('Starting weights', (body, close) => {
     const unit = db.settings.units;
-    const lifts = ['squat', 'press', 'bench', 'deadlift', 'powerclean'];
+    // Whatever the running programme actually uses — not a fixed list of five
+    // barbell lifts, or chins and dips could never be given a starting load.
+    const lifts = programLifts(db);
     const inputs = {};
 
     body.append(el('p', { class: 'sub' },
@@ -166,10 +178,18 @@ function openWeightSetup(ctx, db) {
 
     for (const id of lifts) {
       const lift = MAIN_LIFTS[id];
-      const seed = db.program.working[id] ?? seedWeight(id, db.profile, db.settings);
+      const seed = offeredWeight(db, id);
+      const last = lastLogged(db, id);
       const inp = numInput({ value: num(toDisplayWeight(seed, unit)) });
       inputs[id] = inp;
-      body.append(el('div', { class: 'field' }, el('label', {}, `${lift.name} (${unit})`), inp));
+      body.append(el('div', { class: 'field' },
+        el('label', {}, lift.bodyweight
+          ? `${lift.name} — weight ADDED to bodyweight (${unit}), 0 for none`
+          : `${lift.name} (${unit})`
+          + (last && last.weight > 0
+            ? ` — last logged ${num(toDisplayWeight(last.weight, unit))} × ${last.reps} on ${last.date}`
+            : '')),
+        inp));
     }
 
     body.append(el('button', { class: 'btn-primary btn-block', onclick: () => {
@@ -259,12 +279,20 @@ function startSession(ctx, db, wk) {
 }
 
 function startFreeSession(ctx, db) {
+  // Nothing is programmed, so everything from last time carries — main lifts at
+  // their current working weight, accessories at exactly what you used.
+  const carried = carryForward(db, { label: 'Free session', items: [] });
+
   store.update((d) => {
     d.activeSession = {
       id: uid(), type: 'free', date: todayISO(), startedAt: Date.now(),
-      label: 'Free session', entries: [], notes: '',
+      label: 'Free session', entries: carried.entries,
+      carriedFrom: carried.from, carriedLabel: carried.fromLabel,
+      carriedSameSlot: carried.sameSlot, notes: '',
     };
   }, { immediate: true });
+
+  if (carried.names.length) toast(`Starting from ${carried.from}`);
   ctx.refresh();
 }
 
@@ -541,8 +569,10 @@ function setRow(entry, set, i, db, ctx, updateCounter, { warmup = false } = {}) 
 
   const wInput = numInput({
     class: 'set-input', 'aria-label': `Set ${i + 1} weight`,
-    value: entry.bodyweight && !set.weight ? '' : num(toDisplayWeight(set.weight, unit)),
-    placeholder: entry.bodyweight ? 'BW' : unit,
+    // Zero is a real, meaningful value on a bodyweight lift — it means
+    // bodyweight only — so it is shown rather than left blank.
+    value: num(toDisplayWeight(set.weight || 0, unit)),
+    placeholder: entry.bodyweight ? `+${unit}` : unit,
   });
   const rInput = numInput({
     decimal: false, class: 'set-input', 'aria-label': `Set ${i + 1} reps`,
@@ -670,7 +700,7 @@ function openAddLift(ctx, db) {
     body.append(el('div', { class: 'list' },
       Object.values(MAIN_LIFTS).map((lift) =>
         el('button', { class: 'list-item', onclick: () => {
-          const w = db.program.working[lift.id] ?? seedWeight(lift.id, db.profile, db.settings);
+          const w = offeredWeight(db, lift.id);
           const sets = lift.defaultSets ?? 3;
           const reps = lift.defaultReps ?? 5;
           // Already in today's session? Then this is an extra and must not
@@ -691,7 +721,7 @@ function openAddLift(ctx, db) {
         } },
           el('div', { class: 'grow' },
             el('div', { class: 'li-title' }, lift.name),
-            el('div', { class: 'li-sub' }, `${lift.setsReps}${db.program.working[lift.id] ? ` · ${num(toDisplayWeight(db.program.working[lift.id], db.settings.units))} ${db.settings.units}` : ''}`)),
+            el('div', { class: 'li-sub' }, `${lift.setsReps}${offeredWeight(db, lift.id) ? ` · ${num(toDisplayWeight(offeredWeight(db, lift.id), db.settings.units))} ${db.settings.units}` : ''}`)),
           el('span', { class: 'li-right' }, '+')
         ))
     ));
@@ -883,7 +913,11 @@ async function finishSession(ctx) {
   });
   s.entries = s.entries.filter((e) => e.sets.length > 0 || e.warmupSets.length > 0);
 
-  const changes = s.type === 'lift' ? applySession(db, s) : [];
+  // A free session updates your weights too. Anything you logged is real work
+  // and the next session should start from it — that is the whole point of the
+  // log. The rotation guard inside applySession stops it consuming a
+  // programme day.
+  const changes = (s.type === 'lift' || s.type === 'free') ? applySession(db, s) : [];
 
   store.update((d) => {
     // A day that was only conditioning leaves no lifting session behind.

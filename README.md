@@ -39,7 +39,7 @@ certificate, which removes the warning and the LAN requirement entirely.
 open http://localhost:8765/tests.html
 ```
 
-241 assertions covering the progression engine, plate and warm-up maths,
+272 assertions covering the progression engine, plate and warm-up maths,
 warm-up isolation, carry-forward ownership rules, custom exercises and
 programmes, the round timer (including background catch-up), attachment
 storage, nutrition calculations,
@@ -64,8 +64,13 @@ Programming for Strength Training*.
 - **Texas Method** — volume Monday, recovery Wednesday, intensity Friday, one
   increase per lift per week.
 
-Progression is deterministic. All reps made → the weight goes up by the
-per-lift increment. Reps missed → repeat. Three consecutive misses → reset 10 %
+Progression is deterministic, and it builds on **what you actually lifted**,
+not on what was prescribed. Put 97.5 on a bar the app suggested 100 for, make
+all your reps, and the next session offers 100 — the set you logged is the
+fact; the prescription was only a plan. Every lift on the training screen shows
+what you last did underneath it, so the number is never a mystery.
+
+All reps made → the weight goes up by the per-lift increment. Reps missed → repeat. Three consecutive misses → reset 10 %
 and the small increment takes over. Light and percentage-derived days never
 drive progression. The app never advances a phase on its own: it tells you when
 the criteria are met and leaves the decision to you.
@@ -85,6 +90,11 @@ own warm-up ladder (higher reps, since it doubles as the hamstring warm-up),
 its own increment and its own working weight. It is not part of the Starting
 Strength rotation, because Rippetoe does not program it there; add it to any
 session with **+ Lift** and it progresses like everything else.
+
+**A free session counts.** Work logged off-programme still moves your weights
+on and still starts from last time — it is real work, and the log is the source
+of truth for where you are. It does not consume a day of the rotation, so
+logging an extra session never skips the day you were meant to do next.
 
 **The last session carries forward.** Starting a session pre-fills it with the
 work you added last time — accessories, extra lifts, anything the template does
@@ -116,8 +126,29 @@ movements.
   rather than sets and reps. It is logged as a conditioning session and never
   touches your working weights.
 
-A four-day preset is included: squat/press/deadlift, a bodyweight day
-(chins, dips, Liu raises), a bag day, then squat/bench/RDL, repeating.
+**Every programme is editable**, including the built-in ones. Editing a
+built-in forks it into your own copy on save — the original stays in the list
+untouched, so you can always get back to the reference version — and if you
+were running it, you switch to your copy without losing your place in the
+rotation.
+
+The last column of each exercise slot changes with the movement, because one
+number cannot mean the same thing for all of them:
+
+| Movement | Field | Meaning |
+|---|---|---|
+| Loaded lift | % of top | Blank for a working weight, 80 for a light day, 90 for volume. Under 90 counts as light and does not drive progression. |
+| Chin-up / dip | +kg start | Weight added to bodyweight. Seeds the lift only; after that the progression owns it. |
+| Accessory | Weight | No progression behind it, so this is simply what it prescribes. |
+
+**Chins and dips are weighted lifts.** Given a rep target they progress on
+added load exactly like a barbell lift — belt, chain or dumbbell — with the
+same repeat-and-reset rules, and a reset sheds load down to bodyweight rather
+than going negative. Set the target to 0 reps instead and they revert to sets
+to failure, with load starting once you clear fifteen.
+
+A four-day preset is included: squat/press/deadlift, weighted chins and dips
+plus Liu raises, a bag day, then squat/bench/RDL, repeating.
 
 ### Round timer
 
