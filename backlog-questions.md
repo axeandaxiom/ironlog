@@ -45,8 +45,8 @@ recorded them as bag 12×3 by pattern. Correct them or tell me to delete.
 | Dec 25 – Feb 26 | lb | bodyweight 168–174, squats 245–315 |
 | Mar 26 on | kg | bodyweight 76.7–80.7, squats 110–135 |
 
-If that's wrong, every weight in the middle block is wrong by 2.2×. Please
-confirm before I import.
+**ANSWERED 29.07.26 — "correctly understood."** kg -> lb -> kg is confirmed.
+The unit markers in `backlog.txt` are correct and the import is unblocked.
 
 ---
 
@@ -67,3 +67,29 @@ continues onto the next one. I'll pick it up in batch 3 rather than guess.
 - 03.02.26 bodyweight **172**.
 - The chin/dip/Liu days now read cleanly as two blocks — one heavier set,
   then five (or four) back-off sets — which matches Nov–Jan.
+
+---
+
+## Batch 3 — IMG_1042 (Feb 2026)
+
+**Q10 is now answered by the page itself** — 08.02.26 completes as squat
+`5×295`×3, press `5×145`×3, deadlift `5×360`. No action needed.
+
+**Q11.** 08.02.26 press work sets. The first reads `5×195`, the next two read
+`5×145`. 195 is your bench weight, not your press (you press 135–160), so I
+recorded all three as `5×145`. Confirm, or give me the right numbers.
+
+**Q12.** 11.02.26 squat first work set could be `5×200` or `5×300`. The other
+two are clearly `5×300` and you were at `5×295` three days earlier, so I took
+`5×300`. Confirm.
+
+**Q13.** Somewhere around 10–14.02.26 the Liu raise weight changes from `20` to
+`22.5`, and there is a chin/dip/Liu day I cannot yet pin to a date because the
+column runs off the page. Left out entirely rather than dated wrongly — I'll
+resolve it against the next photo.
+
+**Q14.** 13.02.26 bodyweight reads **179**, up from 172 on 03.02. Plausible over
+ten days, but it's the biggest jump in the file — confirm it isn't a 170.
+
+### Still on this page, not yet transcribed
+14.02.26 onward, plus the undated chin/dip block in Q13. Batch 4 picks these up.

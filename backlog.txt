@@ -369,3 +369,28 @@ LIU 2x12+20
 CHIN 4x7+35
 DIP 4x7+35
 LIU 4x12+20
+
+# --- batch 3: IMG_1042 (Feb 2026) ------------------------------------------
+
+8.2.26
+SQUAT
+WU 10x45, 5x135, 1x225
+WS 5x295 x3
+PRESS
+WU 10x45, 3x95
+WS 5x145 x3
+DEADLIFT
+WU 5x135, 1x225, 1x325
+WS 5x360
+# Squat warm-up came from IMG_1041, where this day starts; the rest is here.
+# Press work sets: see Q11.
+
+11.2.26
+SQUAT
+WU 10x45, 3x135, 1x225
+WS 5x300 x3
+
+12.2.26
+BAG 12x3
+
+13.2.26 179
