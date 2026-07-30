@@ -374,10 +374,30 @@ export function openProgramBuilder(ctx, existing, copyFromId = null, { fork = fa
             };
             drawThird();
 
+            // Each lift names its own training logic. Accessories have none,
+            // so the selector only exists for main lifts.
+            const progWrap = el('div', { style: { marginTop: '8px' } });
+            const drawProg = () => {
+              progWrap.replaceChildren();
+              if (!MAIN_LIFTS[it.ex]) { delete it.progression; return; }
+              const sel = el('select', {},
+                el('option', { value: 'session' }, 'Linear — every session (Starting Strength)'),
+                el('option', { value: 'weekly' }, 'Linear — weekly (Texas cadence)'),
+                el('option', { value: 'manual' }, 'Manual — the app never moves it'));
+              sel.value = it.progression || 'session';
+              sel.addEventListener('change', () => {
+                if (sel.value === 'session') delete it.progression;
+                else it.progression = sel.value;
+              });
+              progWrap.append(el('label', {}, 'Progression'), sel);
+            };
+            drawProg();
+
             pick.addEventListener('change', () => {
               it.ex = pick.value;
               // Swapping a squat for a chin-up must swap the field with it.
               drawThird();
+              drawProg();
             });
 
             items.append(el('div', { class: 'card tight', style: { marginBottom: '0' } },
@@ -388,7 +408,8 @@ export function openProgramBuilder(ctx, existing, copyFromId = null, { fork = fa
               el('div', { class: 'grid3' },
                 el('div', {}, el('label', {}, 'Sets'), sets),
                 el('div', {}, el('label', {}, 'Reps'), reps),
-                third)));
+                third),
+              progWrap));
           });
         };
         drawItems();

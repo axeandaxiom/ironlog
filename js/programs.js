@@ -246,6 +246,9 @@ export function validateProgram(p) {
       if (it.pctOfWorking && MAIN_LIFTS[it.ex]?.bodyweight) {
         problems.push(`"${day.label}": a percentage means nothing on ${exerciseName(it.ex)} — use added weight instead.`);
       }
+      if (it.progression && !['session', 'weekly', 'manual'].includes(it.progression)) {
+        problems.push(`"${day.label}": unknown progression "${it.progression}" on ${exerciseName(it.ex)}.`);
+      }
       if (!(it.sets > 0)) problems.push(`"${day.label}": sets must be at least 1.`);
       if (it.reps < 0) problems.push(`"${day.label}": reps cannot be negative.`);
     });
@@ -365,7 +368,7 @@ export function nextWorkout(db) {
       };
     }
 
-    const working = offeredWeight(db, exId, item.startWeight);
+    const working = offeredWeight(db, exId, item.startWeight, item.progression || 'session');
     let weight = working;
     if (item.pctOfWorking) {
       const smallest = Math.min(...db.settings.plates) * 2;
@@ -554,7 +557,13 @@ export function lastLogged(db, exerciseId) {
       if (!done.length) continue;
       const top = Math.max(...done.map((x) => x.weight || 0));
       const topSet = done.find((x) => (x.weight || 0) === top) || done[0];
-      return { weight: top, reps: topSet.reps, date: s.date, sets: done.length, label: s.label };
+      // Made means judged against the plan that entry itself carried. With no
+      // recorded prescription there is nothing to have made, so null — never
+      // guessed from the shape of the sets.
+      const made = (e.prescribedSets > 0 && e.prescribedReps > 0)
+        ? done.length >= e.prescribedSets && done.every((x) => x.reps >= e.prescribedReps)
+        : null;
+      return { weight: top, reps: topSet.reps, date: s.date, sets: done.length, label: s.label, made };
     }
   }
   return null;
@@ -565,11 +574,33 @@ export function lastLogged(db, exerciseId) {
  * the programme's working weight, then what you last actually lifted, then a
  * bodyweight-scaled guess for a lift with no history at all.
  */
-export function offeredWeight(db, exId, startWeight = null) {
+export function offeredWeight(db, exId, startWeight = null, model = 'session') {
   const working = db.program.working[exId];
   if (working != null) return working;
   const last = lastLogged(db, exId);
-  if (last && last.weight > 0) return last.weight;
+  if (last && last.weight > 0) {
+    // Starting Strength: a made session earns the next jump. When the engine
+    // has no working weight — a fresh device, an imported paper backlog — the
+    // log is the record of that made session, so the offer includes the
+    // increment rather than parroting the last number back. A miss, or an
+    // entry with no recorded plan to judge against, repeats the weight.
+    const lift = MAIN_LIFTS[exId];
+    if (lift && last.made === true && model !== 'manual') {
+      if (model === 'weekly'
+          && (Date.now() - Date.parse(last.date)) / 86400000 < 6) {
+        return last.weight;
+      }
+      const inc = incrementFor(db.program, exId);
+      if (lift.bodyweight) return Math.round((last.weight + inc) * 1000) / 1000;
+      const raw = last.weight + inc;
+      if (isLoadable(raw, db.settings)) return raw;
+      // An off-grid base — pounds converted to kilos, say — plus a clean jump
+      // is still off-grid. Snap to the nearest loadable bar, never below it.
+      const smallest = Math.min(...db.settings.plates) * 2;
+      return Math.max(db.settings.barWeight, roundTo(raw, smallest));
+    }
+    return last.weight;
+  }
   // A programme can seed a lift it has never seen — but only as a starting
   // point. Once you have logged anything, the log and the progression own it.
   if (startWeight != null) return startWeight;
@@ -602,8 +633,17 @@ export function explainOffer(db, exId) {
       ? `A working weight of ${working} kg is stored, and a stored working weight always wins over history. Your last logged set was ${last.weight} kg × ${last.reps} on ${last.date}.`
       : `A working weight of ${working} kg is stored, but nothing has ever been logged for this lift — so this number came from setup, not from training.`;
   } else if (last && last.weight > 0) {
-    source = 'your log';
-    detail = `No working weight is stored, so it falls back to the ${last.weight} kg × ${last.reps} you logged on ${last.date}.`;
+    const off = offeredWeight(db, exId);
+    if (off > last.weight) {
+      source = 'your log, plus the jump it earned';
+      detail = `No working weight is stored. Your ${last.date} session made its plan `
+        + `(${last.sets} sets at ${last.weight} kg), and a made session earns the increment — so the offer is ${off} kg.`;
+    } else {
+      source = 'your log';
+      detail = last.made === false
+        ? `No working weight is stored. Your ${last.date} session missed its plan, so the ${last.weight} kg repeats — no jump until it is made.`
+        : `No working weight is stored, so it falls back to the ${last.weight} kg × ${last.reps} you logged on ${last.date}.`;
+    }
   } else {
     source = 'a bodyweight estimate';
     detail = 'Nothing logged and no working weight, so this is only a starting suggestion.';
@@ -729,6 +769,18 @@ export function setRotationDay(db, index) {
  * Returns a list of human-readable changes so the UI can show exactly what
  * happened and why, rather than silently moving numbers.
  */
+/** The progression model an item claims for a lift, defaulting to the book. */
+function itemProgression(def, label, exId) {
+  for (const phase of Object.values(def?.phases || {})) {
+    for (const day of phase.rotation || []) {
+      if (day.label !== label) continue;
+      const item = (day.items || []).find((i) => i.ex === exId);
+      if (item?.progression) return item.progression;
+    }
+  }
+  return 'session';
+}
+
 export function applySession(db, session) {
   const prog = db.program;
   const def = PROGRAMS[prog.id];
@@ -748,6 +800,16 @@ export function applySession(db, session) {
     // second squat entry to a session would apply the increment twice.
     if (seen.has(entry.exerciseId)) continue;
     seen.add(entry.exerciseId);
+
+    // The item in the programme can name its own training logic. Manual means
+    // the engine keeps its hands off entirely — no increments, no fail counts,
+    // no resets. The weight moves when you move it.
+    const model = itemProgression(def, session.label, entry.exerciseId);
+    if (model === 'manual') {
+      changes.push({ ex: entry.exerciseId, type: 'hold',
+        why: 'Manual progression — the app never moves this weight.' });
+      continue;
+    }
 
     const done = entry.sets.filter((s) => s.done);
     if (done.length === 0) continue;
@@ -775,6 +837,19 @@ export function applySession(db, session) {
 
     if (success) {
       prog.fails[entry.exerciseId] = 0;
+      // Weekly is the Texas cadence on a lift-by-lift basis: made sessions
+      // inside the same week hold, the first one after it collects the jump.
+      if (model === 'weekly') {
+        prog.lastUp ||= {};
+        const today = session.date || new Date().toISOString().slice(0, 10);
+        const lastUp = prog.lastUp[entry.exerciseId];
+        if (lastUp && (Date.parse(today) - Date.parse(lastUp)) / 86400000 < 6) {
+          changes.push({ ex: entry.exerciseId, type: 'hold',
+            why: 'Made — weekly progression, the next jump comes next week.' });
+          continue;
+        }
+        prog.lastUp[entry.exerciseId] = today;
+      }
       if (lift.bodyweight && entry.toFailure) {
         // Sets to failure: there is no rep target to hit, so the trigger for
         // adding load is clearing the threshold. This is the mode for someone

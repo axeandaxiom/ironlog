@@ -2105,3 +2105,107 @@ group('0.75 kg fractional plates');
     else localStorage.removeItem(KEY);
   }
 }
+
+group('A made session earns the jump, even from the log alone');
+{
+  // TV's report: after the backlog import his squat offer was February's
+  // number verbatim. The import correctly never writes programme state, but
+  // Starting Strength says a made session earns the increment — and the log
+  // is the record of that made session.
+  const logged = (sets, { prescribedSets = 3, prescribedReps = 5 } = {}) => ({
+    settings: SETTINGS, profile: { bodyweightKg: 90 },
+    program: { id: 'tv-4day', phase: 1, cursor: 0, working: {}, fails: {}, increments: {} },
+    sessions: [{ id: 's1', type: 'lift', label: 'Day 1 — Squat / Press / Pull',
+      date: '2026-02-11',
+      entries: [{ exerciseId: 'squat', prescribedSets, prescribedReps, sets }] }],
+  });
+  const made = () => Array.from({ length: 3 }, () => ({ weight: 100, reps: 5, done: true }));
+
+  ok(offeredWeight(logged(made()), 'squat') === 102.5,
+     'a made 3x5 at 100 offers 102.5, not 100',
+     String(offeredWeight(logged(made()), 'squat')));
+
+  const missed = made(); missed[2] = { weight: 100, reps: 4, done: true };
+  ok(offeredWeight(logged(missed), 'squat') === 100,
+     'a missed rep repeats the weight — no jump until it is made');
+
+  const noPlan = logged(made(), { prescribedSets: 0, prescribedReps: 0 });
+  ok(offeredWeight(noPlan, 'squat') === 100,
+     'an entry with no recorded plan proves nothing, so nothing is added');
+
+  const db = logged(made());
+  db.program.working.squat = 110;
+  ok(offeredWeight(db, 'squat') === 110,
+     'a stored working weight still wins over everything');
+
+  // An off-grid base — pounds converted to kilos — snaps to a loadable bar.
+  const lb = logged(Array.from({ length: 3 }, () => ({ weight: 136.08, reps: 5, done: true })));
+  const off = offeredWeight(lb, 'squat');
+  ok(Math.abs(off - 137.5) < 1e-9,
+     'an imported 136.08 kg (300 lb) offers a loadable 137.5, not 138.58',
+     String(off));
+
+  // The per-item models gate the offer the same way they gate the engine.
+  ok(offeredWeight(logged(made()), 'squat', null, 'manual') === 100,
+     'manual: the offer parrots the log and waits for you');
+  ok(offeredWeight(logged(made()), 'squat', null, 'weekly') === 102.5,
+     'weekly: a session from months ago has long since earned its jump');
+  const recent = logged(made());
+  recent.sessions[0].date = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+  ok(offeredWeight(recent, 'squat', null, 'weekly') === 100,
+     'weekly: a session two days ago holds until the week is up');
+}
+
+group('Per-exercise progression models in a custom programme');
+{
+  const DEF = {
+    id: 'cp-models', name: 'Models', custom: true,
+    phases: { 1: { rotation: [{ label: 'D1', items: [
+      { ex: 'squat', sets: 3, reps: 5, progression: 'weekly' },
+      { ex: 'bench', sets: 3, reps: 5 },
+      { ex: 'press', sets: 3, reps: 5, progression: 'manual' },
+    ] }] } },
+  };
+  registerCustomPrograms([DEF]);
+  try {
+    // The engine builds on the weight actually lifted, so each session logs
+    // what a lifter following the offers would have on the bar.
+    const mkSession = (date, w) => ({
+      label: 'D1', type: 'lift', programId: 'cp-models', date,
+      entries: Object.entries(w).map(([exerciseId, weight]) => ({
+        exerciseId, prescribedSets: 3, prescribedReps: 5,
+        sets: Array.from({ length: 3 }, () => ({ weight, reps: 5, done: true })),
+      })),
+    });
+    const db = freshDB({ program: {
+      id: 'cp-models', phase: 1, cursor: 0, tmWeek: 0,
+      working: { squat: 100, bench: 70, press: 50 }, fails: {}, increments: {},
+    } });
+
+    applySession(db, mkSession('2026-07-01', { squat: 100, bench: 70, press: 50 }));
+    ok(db.program.working.squat === 102.5, 'weekly lift takes its first jump', String(db.program.working.squat));
+    ok(db.program.working.bench === 72.5, 'default lift progresses per session as always');
+    ok(db.program.working.press === 50, 'manual lift does not move', String(db.program.working.press));
+
+    applySession(db, mkSession('2026-07-04', { squat: 102.5, bench: 72.5, press: 50 }));
+    ok(db.program.working.squat === 102.5, 'weekly: made again three days later, holds', String(db.program.working.squat));
+    ok(db.program.working.bench === 75, 'while the session-model lift keeps climbing');
+
+    applySession(db, mkSession('2026-07-08', { squat: 102.5, bench: 75, press: 50 }));
+    ok(db.program.working.squat === 105, 'weekly: a week after the first jump, the next one lands', String(db.program.working.squat));
+    ok(db.program.working.press === 50, 'manual stays put through all of it');
+
+    // Manual also means no fail bookkeeping — the engine's hands stay off.
+    const miss = mkSession('2026-07-10', { squat: 105, bench: 77.5, press: 50 });
+    miss.entries[2].sets = [{ weight: 50, reps: 2, done: true }];
+    applySession(db, miss);
+    ok(!db.program.fails.press, 'a missed manual session counts no failure', String(db.program.fails.press));
+
+    ok(validateProgram({ ...DEF, phases: { 1: { rotation: [{ label: 'D1', items: [
+      { ex: 'squat', sets: 3, reps: 5, progression: 'yolo' },
+    ] } ] } } }).some((p) => p.includes('yolo')),
+       'validateProgram rejects a model it does not know');
+  } finally {
+    registerCustomPrograms([]);
+  }
+}
