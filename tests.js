@@ -1064,9 +1064,9 @@ group('Weighted chins and dips');
         sets: Array.from({ length: 3 }, () => ({ weight: 15, reps: 5, done: true })) },
     ],
   });
-  ok(db.program.working.chinup === 21.25,
+  ok(db.program.working.chinup === 20.75,
      'weighted chins add load on a completed session', String(db.program.working.chinup));
-  ok(db.program.working.dip === 17.5,
+  ok(db.program.working.dip === 15.75,
      'and so do weighted dips', String(db.program.working.dip));
 
   // Missing reps must behave exactly like a barbell lift.
@@ -1106,7 +1106,7 @@ group('Weighted chins and dips');
     entries: [{ exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 5,
       sets: Array.from({ length: 3 }, () => ({ weight: 10, reps: 5, done: true })) }],
   });
-  ok(db4.program.working.chinup === 11.25,
+  ok(db4.program.working.chinup === 10.75,
      'logging +10 when the app said +30 builds from the +10 you actually did',
      String(db4.program.working.chinup));
 
@@ -2038,6 +2038,68 @@ group('A conditioning day carries nothing in');
     const free = carryForward(store.get(), { label: 'Free session', items: [] });
     ok(free.entries.length > 0, 'a free session still starts from the last one',
        String(free.entries.length));
+  } finally {
+    if (backup !== null) localStorage.setItem(KEY, backup);
+    else localStorage.removeItem(KEY);
+  }
+}
+
+group('0.75 kg fractional plates');
+{
+  // TV's rule: smallest loadable is 0.75 kg. A barbell jump splits across two
+  // sides, so the bar's minimum honest jump is 1.5; a belt takes one plate,
+  // so chins and dips jump 0.75.
+  const KEY = 'ironlog.db';
+  const backup = localStorage.getItem(KEY);
+  try {
+    store.wipe();
+    const d = store.get();
+    ok(d.settings.plates.includes(0.75), 'the default plate set owns 0.75 kg plates',
+       JSON.stringify(d.settings.plates));
+
+    ok(MAIN_LIFTS.chinup.increment === 0.75 && MAIN_LIFTS.chinup.lateIncrement === 0.75,
+       'chins jump 0.75, early and late');
+    ok(MAIN_LIFTS.dip.increment === 0.75 && MAIN_LIFTS.dip.lateIncrement === 0.75,
+       'dips jump 0.75, early and late');
+    ok(MAIN_LIFTS.squat.increment === 2.5, 'the barbell standard stays the book 2.5');
+
+    // Every barbell jump must be makeable from the plates owned — the real
+    // test is the plate solver, not divisibility by the smallest plate: a
+    // 2.5 kg deadlift jump is one 1.25 plate per side, which he owns.
+    for (const id of ['squat', 'press', 'bench', 'deadlift', 'rdl', 'powerclean']) {
+      for (const inc of [MAIN_LIFTS[id].increment, MAIN_LIFTS[id].lateIncrement]) {
+        ok(isLoadable(d.settings.barWeight + inc, d.settings),
+           `${id} jump of ${inc} is loadable on the bar`,
+           JSON.stringify(platesFor(d.settings.barWeight + inc, d.settings.barWeight, d.settings.plates)));
+      }
+    }
+
+    // An old export with the untouched default plate list gains the 0.75s on
+    // import; a list the user edited is their inventory and stays theirs.
+    const base = JSON.parse(JSON.stringify(store.get()));
+    base.settings.plates = [25, 20, 15, 10, 5, 2.5, 1.25];
+    store.importJSON(JSON.stringify(base), { mode: 'replace' });
+    ok(store.get().settings.plates.includes(0.75),
+       'an old default plate list is granted the new plates on import',
+       JSON.stringify(store.get().settings.plates));
+
+    base.settings.plates = [25, 20, 10, 5];   // clearly user-edited
+    store.importJSON(JSON.stringify(base), { mode: 'replace' });
+    ok(!store.get().settings.plates.includes(0.75),
+       'a hand-edited plate list is left exactly as the user set it',
+       JSON.stringify(store.get().settings.plates));
+
+    // The progression arithmetic lands where the plates land.
+    store.wipe();
+    const db = store.get();
+    db.program.working.chinup = 15;
+    applySession(db, {
+      label: 'D2', type: 'lift', programId: 'tv-4day',
+      entries: [{ exerciseId: 'chinup', prescribedSets: 3, prescribedReps: 5,
+        sets: Array.from({ length: 3 }, () => ({ weight: 15, reps: 5, done: true })) }],
+    });
+    ok(db.program.working.chinup === 15.75,
+       'a made chin session moves the belt 15 -> 15.75', String(db.program.working.chinup));
   } finally {
     if (backup !== null) localStorage.setItem(KEY, backup);
     else localStorage.removeItem(KEY);

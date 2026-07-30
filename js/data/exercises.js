@@ -16,7 +16,7 @@ export const MAIN_LIFTS = {
     kind: 'main',
     bar: true,
     increment: 2.5,
-    lateIncrement: 1.25,
+    lateIncrement: 1.5,
     resetPct: 0.9,
     // Novices start light enough to fix form; this is a fraction of bodyweight
     // used only to seed a first-session suggestion.
@@ -41,7 +41,7 @@ export const MAIN_LIFTS = {
     kind: 'main',
     bar: true,
     increment: 2.5,
-    lateIncrement: 1.25,
+    lateIncrement: 1.5,
     resetPct: 0.9,
     seedBwRatio: 0.25,
     defaultSets: 3,
@@ -64,7 +64,7 @@ export const MAIN_LIFTS = {
     kind: 'main',
     bar: true,
     increment: 2.5,
-    lateIncrement: 1.25,
+    lateIncrement: 1.5,
     resetPct: 0.9,
     seedBwRatio: 0.4,
     defaultSets: 3,
@@ -111,7 +111,7 @@ export const MAIN_LIFTS = {
     kind: 'main',
     bar: true,
     increment: 2.5,
-    lateIncrement: 1.25,
+    lateIncrement: 1.5,
     resetPct: 0.9,
     seedBwRatio: 0.4,
     defaultSets: 5,
@@ -134,7 +134,7 @@ export const MAIN_LIFTS = {
     kind: 'main',
     bar: true,
     increment: 2.5,
-    lateIncrement: 1.25,
+    lateIncrement: 1.5,
     resetPct: 0.9,
     // Most people RDL somewhere around 60-70 % of their deadlift, and the
     // limiter is hamstring length long before it is back strength.
@@ -160,8 +160,10 @@ export const MAIN_LIFTS = {
     kind: 'main',
     bar: false,
     bodyweight: true,
-    increment: 2.5,
-    lateIncrement: 1.25,
+    // Added weight hangs off a belt — one stack, no symmetry — so the smallest
+    // plate TV owns (0.75 kg) is the jump, early and late alike.
+    increment: 0.75,
+    lateIncrement: 0.75,
     resetPct: 0.9,
     defaultSets: 3,
     defaultReps: 0,
@@ -182,8 +184,8 @@ export const MAIN_LIFTS = {
     kind: 'main',
     bar: false,
     bodyweight: true,
-    increment: 1.25,
-    lateIncrement: 1.25,
+    increment: 0.75,
+    lateIncrement: 0.75,
     resetPct: 0.9,
     defaultSets: 3,
     defaultReps: 0,
@@ -431,7 +433,7 @@ export function normaliseCustom(ex) {
   const isMain = ex.kind === 'main';
   return {
     increment: 2.5,
-    lateIncrement: 1.25,
+    lateIncrement: 1.5,
     resetPct: 0.9,
     defaultSets: 3,
     defaultReps: isMain ? 5 : 10,

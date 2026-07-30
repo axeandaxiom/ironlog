@@ -2,7 +2,7 @@
 
 import { el, num, download, toast, toDisplayWeight, fromDisplayWeight, fmtDateLong, numInput, parseNum } from '../util.js';
 import * as store from '../store.js';
-import { PROGRAMS, programLifts, incrementFor, explainOffer } from '../programs.js';
+import { PROGRAMS, programLifts, incrementFor, explainOffer, isLoadable } from '../programs.js';
 import { MAIN_LIFTS } from '../data/exercises.js';
 import { support } from '../sensors.js';
 import { sheet, confirmSheet, checkForUpdate, applyUpdate } from '../app.js';
@@ -318,12 +318,11 @@ function openIncrements(ctx, db) {
       'How much the app adds after a successful session. The defaults follow the book: bigger jumps on the deadlift, smaller on the press, and everything drops to the smaller jump after your first reset. Override them if your plates or your progress say otherwise.'),
       el('div', { class: 'note warn' },
         el('b', {}, 'Micro-loading. '),
-        'A barbell jump is split across two sides, so a 0.75 kg increase needs 0.375 kg plates — which do not exist. '
-        + '0.75 kg is loadable on a chin-up or dip belt, on a dumbbell, and on most machines, and the app will use it faithfully there. '
-        + 'For a bar, either buy 0.25 or 0.5 kg micro plates and add them under Bar & units, or use 0.5 kg per side for a 1 kg jump. '
+        'A barbell jump is split across two sides. With the 0.75 kg fractional plates the smallest '
+        + 'jump a bar can make is 1.5 kg; a chin-up or dip belt takes a single plate, so 0.75 kg works there. '
         + 'Nothing is silently rounded away either way.'));
     // Common jumps, including micro-loading. Typing any other number works too.
-    const PICKS = [0.5, 0.75, 1, 1.25, 2.5, 5];
+    const PICKS = [0.75, 1.5, 2.5, 5];
 
     for (const id of programLifts(db)) {
       const lift = MAIN_LIFTS[id];
@@ -340,15 +339,16 @@ function openIncrements(ctx, db) {
           warn.append('Added weight hangs off a belt, so any increment you own works.');
           return;
         }
-        // A barbell needs the jump split evenly across two sides.
+        // A barbell needs the jump split across two sides, and "loadable"
+        // means the plate solver can build that side from the plates owned —
+        // divisibility by the smallest plate is the wrong test: a 2.5 kg jump
+        // is one 1.25 plate per side even though 1.25 / 0.75 is not whole.
         const perSide = v / 2;
-        const smallestPlate = Math.min(...db.settings.plates);
-        const ok = Math.abs(perSide / smallestPlate - Math.round(perSide / smallestPlate)) < 1e-9;
+        const ok = isLoadable(db.settings.barWeight + v, db.settings);
         warn.append(ok
           ? `Needs ${num(toDisplayWeight(perSide, unit))} ${unit} per side — you have that.`
-          : `Needs ${num(toDisplayWeight(perSide, unit))} ${unit} per side. Your smallest plate is `
-            + `${num(toDisplayWeight(smallestPlate, unit))} ${unit}, so this jump is not loadable on a bar `
-            + 'unless you add micro plates. The app will still use it, and the plate line will say what it cannot make.');
+          : `Needs ${num(toDisplayWeight(perSide, unit))} ${unit} per side, which your plates cannot make. `
+            + 'The app will still use it, and the plate line will say what it cannot load.');
         warn.style.color = ok ? 'var(--muted)' : 'var(--warn)';
       };
       inp.addEventListener('change', checkLoadable);

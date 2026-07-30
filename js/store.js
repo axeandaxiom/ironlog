@@ -14,7 +14,7 @@ function defaultDB() {
       units: 'kg',
       barWeight: 20,
       // Typical Estonian commercial-gym set, kg per plate.
-      plates: [25, 20, 15, 10, 5, 2.5, 1.25],
+      plates: [25, 20, 15, 10, 5, 2.5, 1.25, 0.75],
       restSec: { main: 240, assistance: 120, conditioning: 60 },
       autoRest: true,
       keepAwake: true,
@@ -90,6 +90,15 @@ function migrate(data) {
   const merged = { ...fresh, ...data, schema: SCHEMA };
   merged.settings = { ...fresh.settings, ...(data.settings || {}) };
   merged.settings.restSec = { ...fresh.settings.restSec, ...(data.settings?.restSec || {}) };
+  // The 0.75 kg fractional plates arrived in v20. A stored plate list predates
+  // them, so grant them once — but only to the untouched default set. A list
+  // the user has edited is their inventory, not ours to add to.
+  const OLD_DEFAULT = [25, 20, 15, 10, 5, 2.5, 1.25];
+  if (Array.isArray(merged.settings.plates)
+      && merged.settings.plates.length === OLD_DEFAULT.length
+      && OLD_DEFAULT.every((v, i) => merged.settings.plates[i] === v)) {
+    merged.settings.plates = [...OLD_DEFAULT, 0.75];
+  }
   merged.profile = { ...fresh.profile, ...(data.profile || {}) };
   merged.program = { ...fresh.program, ...(data.program || {}) };
   merged.metrics = { ...fresh.metrics, ...(data.metrics || {}) };

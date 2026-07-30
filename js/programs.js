@@ -821,7 +821,7 @@ export function applySession(db, session) {
         // bodyweight lift that means shedding added load, and it bottoms out
         // at bodyweight rather than going negative.
         const reset = lift.bodyweight
-          ? Math.max(0, roundTo(current * lift.resetPct, 1.25))
+          ? Math.max(0, roundTo(current * lift.resetPct, Math.min(...db.settings.plates)))
           : roundTo(current * lift.resetPct, smallest);
         prog.working[entry.exerciseId] = reset;
         prog.fails[entry.exerciseId] = 0;
