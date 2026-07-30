@@ -432,6 +432,14 @@ export function lastSessionLike(db, label) {
   return lifts.find((s) => s.label === label) || lifts[0] || null;
 }
 
+/** Same, but no fallback: this slot or nothing. */
+export function lastSessionExact(db, label) {
+  const lifts = (db.sessions || [])
+    .filter((s) => (s.type === 'lift' || s.type === 'free') && (s.entries || []).length)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  return lifts.find((s) => s.label === label) || null;
+}
+
 /**
  * Everything you did last time that the programme did not prescribe.
  *
@@ -441,7 +449,22 @@ export function lastSessionLike(db, label) {
  * does not know about, at the weights and reps you actually used.
  */
 export function carryForward(db, wk) {
-  const prev = lastSessionLike(db, wk.label);
+  const items = wk.items || [];
+
+  // A conditioning-only day is exactly what it says. Nothing may be carried
+  // into it: the fallback below used to pull your latest lift session in, and
+  // because a bag day programs no lifts, every one of them arrived as an
+  // "extra" — a bag day that opens by offering squats.
+  if (items.length && items.every((i) => i.conditioning)) {
+    return { entries: [], from: null, names: [] };
+  }
+
+  // A programmed day only carries from its own slot. The any-session fallback
+  // is for free sessions, where repeating whatever you last did is the point;
+  // on a programmed day it would smear one slot's accessories across another.
+  const prev = items.length
+    ? lastSessionExact(db, wk.label)
+    : lastSessionLike(db, wk.label);
   if (!prev) return { entries: [], from: null, names: [] };
 
   const programmed = new Set(wk.items.map((i) => i.exerciseId));

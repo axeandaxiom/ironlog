@@ -1985,3 +1985,61 @@ group('A backlog import is history, never programme state');
   store.importJSON(file, { mode: 'merge' });
   ok(store.get().sessions.length === n, 'importing twice adds nothing the second time');
 }
+
+group('A conditioning day carries nothing in');
+{
+  // Regression. lastSessionLike falls back to the most recent lift session
+  // when a slot has never been run — right for a free session, wrong for a
+  // bag day: it programs no lifts, so every lift in the fallback session
+  // counted as an "extra" and Day 3 opened by offering squats.
+  const KEY = 'ironlog.db';
+  const backup = localStorage.getItem(KEY);
+  try {
+    store.wipe();
+    store.update((d) => {
+      d.program.id = 'tv-4day';
+      d.program.cursor = 2;                    // Day 3 — Bag
+      d.program.working = { squat: 130, bench: 90, rdl: 110 };
+      d.sessions.push({
+        id: 'day4', type: 'lift', programId: 'tv-4day', label: 'Day 4 — Squat, bench, RDL',
+        date: '2026-07-27',
+        entries: [
+          { exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+            sets: [{ weight: 130, reps: 5, done: true }] },
+          { exerciseId: 'bench', prescribedSets: 3, prescribedReps: 5,
+            sets: [{ weight: 90, reps: 5, done: true }] },
+          { exerciseId: 'rdl', prescribedSets: 1, prescribedReps: 5,
+            sets: [{ weight: 110, reps: 5, done: true }] },
+        ],
+      });
+    }, { immediate: true });
+
+    const db = store.get();
+    const wk = nextWorkout(db);
+    ok(wk.items.length === 1 && !!wk.items[0].conditioning,
+       'the bag day prescribes exactly its conditioning block',
+       JSON.stringify(wk.items.map((i) => i.exerciseId || i.conditioningId)));
+
+    const carried = carryForward(db, wk);
+    ok(carried.entries.length === 0,
+       'and nothing is carried into it — no lifts offered on a bag day',
+       JSON.stringify(carried.entries.map((e) => e.exerciseId)));
+
+    // A programmed lift day no longer inherits another slot's work either:
+    // Day 1 has never been run, and the only history is Day 4.
+    store.update((d) => { d.program.cursor = 0; }, { immediate: true });
+    const day1 = carryForward(store.get(), nextWorkout(store.get()));
+    ok(day1.entries.length === 0,
+       'a programmed day never carries from a different slot',
+       JSON.stringify(day1.entries.map((e) => e.exerciseId)));
+
+    // The free session keeps its any-session fallback — repeating whatever
+    // you last did is its entire purpose.
+    const free = carryForward(store.get(), { label: 'Free session', items: [] });
+    ok(free.entries.length > 0, 'a free session still starts from the last one',
+       String(free.entries.length));
+  } finally {
+    if (backup !== null) localStorage.setItem(KEY, backup);
+    else localStorage.removeItem(KEY);
+  }
+}
