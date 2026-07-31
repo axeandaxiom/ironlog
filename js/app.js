@@ -3,6 +3,7 @@
 
 import { $, $$, el, fmtClock, buzz } from './util.js';
 import * as store from './store.js';
+import { bell, primeAudio } from './timer.js';
 import { keepAwake } from './sensors.js';
 import { registerCustomExercises } from './data/exercises.js';
 import { registerCustomPrograms } from './programs.js';
@@ -87,6 +88,10 @@ let restIv = null;
 
 export function startRest(seconds, label = 'Rest') {
   const bar = $('#rest-bar');
+  // Rest starts from the tap that logged the set, and that tap is the one
+  // moment iOS lets audio begin — primed here, the bell at the end can sound
+  // from a timer tick with the screen dark.
+  if (store.get().settings.soundOnRestEnd) primeAudio();
   restState = { target: seconds, start: Date.now(), label, alerted: false };
   bar.hidden = false;
   $('.rest-label', bar).textContent = label;
@@ -124,7 +129,7 @@ function tickRest() {
     if (!restState.alerted) {
       restState.alerted = true;
       buzz([90, 60, 90]);
-      if (store.get().settings.soundOnRestEnd) beep();
+      if (store.get().settings.soundOnRestEnd) bell(1);
     }
   }
 }
@@ -135,21 +140,9 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && restState) tickRest();
 });
 
-let audioCtx = null;
-function beep() {
-  try {
-    audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.frequency.value = 660;
-    g.gain.setValueAtTime(0.001, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.18, audioCtx.currentTime + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-    o.connect(g).connect(audioCtx.destination);
-    o.start();
-    o.stop(audioCtx.currentTime + 0.36);
-  } catch { /* audio is a nicety, never a failure */ }
-}
+// The old local beep built a second AudioContext outside any user gesture;
+// iOS starts those suspended, so on a phone it was silent. The round timer's
+// bell, primed in startRest, replaces it.
 
 // Guarded so importing this module outside the app shell (the test page) does
 // not throw on a missing element.
