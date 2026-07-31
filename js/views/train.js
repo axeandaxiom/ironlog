@@ -113,7 +113,11 @@ function renderPlan(view, ctx, db) {
         ),
         el('span', { class: 'pill accent' }, prog.frequency.split(',')[0])
       ),
-      el('div', { class: 'note', style: { marginBottom: '0' } }, wk.phaseNote)
+      // The programme description is reference text, not something to reread
+      // before every session — collapsed by default, one tap when wanted.
+      el('details', { class: 'note', style: { marginBottom: '0' } },
+        el('summary', { style: { cursor: 'pointer', fontWeight: '600' } }, 'About this programme'),
+        el('div', { style: { marginTop: '6px' } }, wk.phaseNote))
     )
   );
 
