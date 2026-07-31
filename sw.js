@@ -1,7 +1,7 @@
 // Service worker: cache-first for the app shell so the gym's dead spot in the
 // basement is a non-event. Bump CACHE when any file below changes.
 
-const CACHE = 'ironlog-v24';
+const CACHE = 'ironlog-v25';
 
 const ASSETS = [
   './',
@@ -40,8 +40,12 @@ self.addEventListener('install', (e) => {
     caches.open(CACHE)
       // addAll is all-or-nothing; a single 404 would leave the app uncached,
       // so each asset is added independently and failures are logged.
+      // cache: 'reload' forces each asset past the HTTP cache to the origin.
+      // Without it, a new worker precached whatever 10-minute-old copies the
+      // HTTP cache held — a "new version" made of stale files.
       .then((c) => Promise.all(ASSETS.map((url) =>
-        c.add(url).catch((err) => console.warn('[sw] skipped', url, err.message)))))
+        c.add(new Request(url, { cache: 'reload' }))
+          .catch((err) => console.warn('[sw] skipped', url, err.message)))))
       .then(() => self.skipWaiting())
   );
 });
@@ -74,7 +78,11 @@ self.addEventListener('fetch', (e) => {
   // signal at all the app still opens fully.
   e.respondWith(
     Promise.race([
-      fetch(req),
+      // no-cache: revalidate with the origin instead of trusting the HTTP
+      // cache. GitHub Pages serves ten-minute max-age, so a plain fetch here
+      // was "network-first" in name only — an unchanged file is still a cheap
+      // 304, and the 2.5 s race keeps a dead connection from hanging the app.
+      fetch(new Request(req, { cache: 'no-cache' })),
       new Promise((_, reject) => setTimeout(() => reject(new Error('slow')), 2500)),
     ])
       .then((res) => {
