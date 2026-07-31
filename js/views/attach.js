@@ -17,7 +17,11 @@ import { sheet, confirmSheet } from '../app.js';
 export { hasAttachments };
 
 const KINDS = {
-  video: { label: 'Video', accept: 'video/*', capture: 'environment', icon: '▶' },
+  // No `capture` on video: forcing the camera directly suspends a standalone
+  // PWA behind the camera UI and iOS kills the recording after a few seconds.
+  // The chooser's own "Take Video" presents differently and records fully —
+  // and it also lets you attach a video already shot in the Camera app.
+  video: { label: 'Video', accept: 'video/*', icon: '▶' },
   photo: { label: 'Photo', accept: 'image/*', capture: 'environment', icon: '◼' },
   audio: { label: 'Audio', accept: 'audio/*', icon: '♪' },
 };

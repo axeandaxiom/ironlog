@@ -809,7 +809,9 @@ function setRow(entry, set, i, db, ctx, updateCounter, { warmup = false } = {}) 
   const idx = el('button', {
     class: `set-idx ${hasAttachments(set) ? 'has-media' : ''}`,
     'aria-label': `Notes and media for set ${i + 1}`,
-  }, warmup ? (set.label || '·') : String(i + 1));
+  // Warm-ups number like work sets. The old percentage labels described the
+  // generator, not the training.
+  }, String(i + 1));
 
   idx.addEventListener('click', () => {
     openAttachments(ctx, entry, set, i, {

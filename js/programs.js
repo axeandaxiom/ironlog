@@ -387,7 +387,13 @@ export function nextWorkout(db) {
       weight: lift.bodyweight ? working : weight,
       bodyweight: !!lift.bodyweight,
       increment: incrementFor(prog, exId),
-      warmup: lift.bodyweight || item.light ? [] : warmupSets(weight, lift.warmup, db.settings),
+      // Your own last ramp, when there is one; the calculated ladder only for
+      // a lift with no history. Anything at or above today's work weight is
+      // dropped — after a reset an old top single would outweigh the work.
+      warmup: lift.bodyweight || item.light ? [] : (() => {
+        const prior = (lastWarmups(db, exId) || []).filter((w) => w.weight < weight);
+        return prior.length ? prior : warmupSets(weight, lift.warmup, db.settings);
+      })(),
       plates: lift.bar ? platesFor(weight, db.settings.barWeight, db.settings.plates) : null,
     };
   });
@@ -548,6 +554,24 @@ export function carryForward(db, wk) {
  * Returns the top completed work set, most recent session first. Warm-ups and
  * light days are excluded: neither tells you what you can lift.
  */
+/**
+ * The warm-up ramp you actually did last time for this lift, newest first.
+ * TV's ramp is his own — 10x20, 5x70, 1x110 — and it barely moves as the work
+ * weight climbs, so prescribing it beats recomputing a percentage ladder that
+ * lands on numbers he never uses. Returns null when nothing is logged.
+ */
+export function lastWarmups(db, exerciseId) {
+  const sessions = [...(db.sessions || [])].sort((a, b) => (a.date < b.date ? 1 : -1));
+  for (const s of sessions) {
+    for (const e of s.entries || []) {
+      if (e.exerciseId !== exerciseId || e.light) continue;
+      const w = (e.warmupSets || []).filter((x) => x.done !== false && x.weight > 0);
+      if (w.length) return w.map((x) => ({ weight: x.weight, reps: x.reps, label: '' }));
+    }
+  }
+  return null;
+}
+
 export function lastLogged(db, exerciseId) {
   const sessions = [...(db.sessions || [])].sort((a, b) => (a.date < b.date ? 1 : -1));
   for (const s of sessions) {

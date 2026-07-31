@@ -2209,3 +2209,52 @@ group('Per-exercise progression models in a custom programme');
     registerCustomPrograms([]);
   }
 }
+
+group('Warm-ups come from your own last ramp');
+{
+  // TV: "just the number of the set, with last time's lifts prescribed."
+  // The percentage ladder only exists for a lift with no history.
+  const withRamp = (working, ramp) => ({
+    settings: SETTINGS, profile: { bodyweightKg: 90 },
+    program: { id: 'ss-novice', phase: 1, cursor: 0, tmWeek: 0,
+      working: { squat: working, press: 50, deadlift: 140 }, fails: {}, increments: {} },
+    sessions: [{ id: 's1', type: 'lift', label: 'A', date: '2026-07-20',
+      entries: [{ exerciseId: 'squat', prescribedSets: 3, prescribedReps: 5,
+        warmupSets: ramp,
+        sets: [{ weight: working, reps: 5, done: true }] }] }],
+  });
+  const ramp = [
+    { weight: 20, reps: 10, done: true },
+    { weight: 70, reps: 5, done: true },
+    { weight: 110, reps: 1, done: true },
+  ];
+
+  const wk = nextWorkout(withRamp(120, ramp));
+  const squat = wk.items.find((i) => i.exerciseId === 'squat');
+  ok(squat.warmup.length === 3
+     && squat.warmup.every((w, i) => w.weight === ramp[i].weight && w.reps === ramp[i].reps),
+     'the prescribed warm-ups are exactly last session\'s ramp',
+     JSON.stringify(squat.warmup));
+  ok(squat.warmup.every((w) => !w.label),
+     'and none of them carries a percentage label');
+
+  // After a reset the old top single would outweigh the work weight.
+  const wkReset = nextWorkout(withRamp(100, ramp));
+  const sqReset = wkReset.items.find((i) => i.exerciseId === 'squat');
+  ok(sqReset.warmup.every((w) => w.weight < 100),
+     'a warm-up at or above the work weight is dropped',
+     JSON.stringify(sqReset.warmup.map((w) => w.weight)));
+  ok(sqReset.warmup.length === 2, 'the rest of the ramp survives');
+
+  // Unticked warm-up rows were never done, so they do not come back.
+  const half = ramp.map((w, i) => ({ ...w, done: i < 2 }));
+  const wkHalf = nextWorkout(withRamp(120, half));
+  ok(wkHalf.items.find((i) => i.exerciseId === 'squat').warmup.length === 2,
+     'only the warm-ups you actually did are prescribed again');
+
+  // No history at all: the calculated ladder still exists as the fallback.
+  const bare = withRamp(120, ramp); bare.sessions = [];
+  const wkBare = nextWorkout(bare);
+  ok(wkBare.items.find((i) => i.exerciseId === 'squat').warmup.length > 0,
+     'a lift with no history still gets the calculated ladder');
+}
