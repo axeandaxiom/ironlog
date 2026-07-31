@@ -108,16 +108,16 @@ function renderPlan(view, ctx, db) {
     el('div', { class: 'workout-head' },
       el('div', { class: 'row between' },
         el('div', {},
-          el('p', { class: 'workout-title' }, `${prog.name} — ${wk.label}`),
+          // The title is the door to the description — tapping it opens a
+          // sheet, so the header itself spends no space on reference text.
+          // One code path, so this holds for every programme, yours included.
+          el('p', { class: 'workout-title', style: { cursor: 'pointer' },
+            onclick: () => openProgramInfo(prog, wk) },
+            `${prog.name} — ${wk.label}`),
           el('div', { class: 'muted', style: { fontSize: '13px', marginTop: '2px' } }, `${wk.phaseName} · session ${db.program.cursor + 1}`)
         ),
         el('span', { class: 'pill accent' }, prog.frequency.split(',')[0])
-      ),
-      // The programme description is reference text, not something to reread
-      // before every session — collapsed by default, one tap when wanted.
-      el('details', { class: 'note', style: { marginBottom: '0' } },
-        el('summary', { style: { cursor: 'pointer', fontWeight: '600' } }, 'About this programme'),
-        el('div', { style: { marginTop: '6px' } }, wk.phaseNote))
+      )
     )
   );
 
@@ -410,6 +410,18 @@ function startFreeSession(ctx, db, date = todayISO(), when = null) {
  * touch your working weights — see finishSession. Dating it today or later is
  * simply a normal session.
  */
+/** Everything the header used to say inline, one tap away instead. */
+function openProgramInfo(prog, wk) {
+  sheet(prog.name, (body) => {
+    body.append(
+      el('div', { class: 'li-sub' }, [wk.phaseName, prog.frequency].filter(Boolean).join(' · ')),
+      prog.blurb ? el('p', { style: { marginTop: '10px' } }, prog.blurb) : null,
+      wk.phaseNote ? el('div', { class: 'note' }, wk.phaseNote) : null,
+      prog.source ? el('div', { class: 'li-sub', style: { marginTop: '8px' } }, prog.source) : null,
+    );
+  });
+}
+
 function openBackdate(ctx, db) {
   sheet('Log a past session', (body, close) => {
     const dateInput = el('input', { type: 'date', value: todayISO(), max: todayISO() });
