@@ -615,6 +615,56 @@ function refreshSummary() {
   if (node && s) node.textContent = summaryText(s);
 }
 
+/**
+ * iOS-style swipe left to delete. The row slides to reveal a Delete button;
+ * tapping it fires onDelete, tapping the row again (or swiping back) closes.
+ * Two deliberate gestures rather than delete-on-release, because a sweaty
+ * thumb mid-workout must not be able to destroy a logged set in one motion.
+ */
+function swipeable(row, onDelete) {
+  const del = el('button', { class: 'swipe-del', 'aria-label': 'Delete',
+    onclick: (e) => { e.stopPropagation(); onDelete(); } }, 'Delete');
+  const wrap = el('div', { class: 'swipe-wrap' }, del, row);
+  row.classList.add('swipe-row');
+  let sx = 0, sy = 0, dx = 0, mode = null, isOpen = false, tracking = false;
+
+  const setX = (x, anim) => {
+    row.style.transition = anim ? 'transform .18s ease' : 'none';
+    row.style.transform = x ? `translateX(${x}px)` : '';
+  };
+  row.addEventListener('pointerdown', (e) => {
+    tracking = true; sx = e.clientX; sy = e.clientY; dx = 0; mode = null;
+  });
+  row.addEventListener('pointermove', (e) => {
+    if (!tracking) return;
+    const mx = e.clientX - sx, my = e.clientY - sy;
+    if (mode === null) {
+      if (Math.abs(mx) > 12 && Math.abs(mx) > Math.abs(my) * 1.4) {
+        mode = 'h';
+        try { row.setPointerCapture(e.pointerId); } catch { /* fine */ }
+      } else if (Math.abs(my) > 12) mode = 'v';
+    }
+    if (mode !== 'h') return;
+    dx = Math.min(0, mx + (isOpen ? -82 : 0));
+    setX(Math.max(dx, -110), false);
+  });
+  const settle = () => {
+    if (!tracking) return;
+    tracking = false;
+    if (mode === 'h') {
+      isOpen = dx < -40;
+      setX(isOpen ? -82 : 0, true);
+    } else if (isOpen && mode === null) {
+      // A plain tap on an open row closes it rather than doing anything else.
+      isOpen = false; setX(0, true);
+    }
+    mode = null;
+  };
+  row.addEventListener('pointerup', settle);
+  row.addEventListener('pointercancel', settle);
+  return wrap;
+}
+
 function exerciseBlock(entry, db, ctx) {
   const unit = db.settings.units;
   const ex = findExercise(entry.exerciseId);
@@ -639,17 +689,29 @@ function exerciseBlock(entry, db, ctx) {
     weight: w.weight, reps: w.reps, label: w.label, done: false, ts: null,
   }));
 
+  // Every row is swipeable: deleting splices the set out and rebuilds just
+  // this grid, so the numbering is always the truth. Nothing else re-renders.
+  const rowFor = (grid, arr, set, i, warmup) => swipeable(
+    setRow(entry, set, i, db, ctx, updateCounter, { warmup }),
+    () => {
+      const idx = arr.indexOf(set);
+      if (idx >= 0) arr.splice(idx, 1);
+      store.save();
+      grid.replaceChildren(...arr.map((x, j) => rowFor(grid, arr, x, j, warmup)));
+      updateCounter();
+      refreshSummary();
+    });
+
   if (entry.warmupSets.length || (MAIN_LIFTS[entry.exerciseId] && !entry.bodyweight)) {
     const wGrid = el('div', { class: 'set-grid warmup-grid' });
     entry.warmupSets.forEach((set, i) =>
-      wGrid.append(setRow(entry, set, i, db, ctx, updateCounter, { warmup: true })));
+      wGrid.append(rowFor(wGrid, entry.warmupSets, set, i, true)));
 
     const addWarm = el('button', { class: 'btn-sm btn-ghost', onclick: (e) => {
       const last = entry.warmupSets.at(-1) || { weight: db.settings.barWeight, reps: 5 };
       entry.warmupSets.push({ weight: last.weight, reps: last.reps, label: '', done: false, ts: null });
       store.save();
-      wGrid.append(setRow(entry, entry.warmupSets.at(-1), entry.warmupSets.length - 1,
-        db, ctx, updateCounter, { warmup: true }));
+      wGrid.append(rowFor(wGrid, entry.warmupSets, entry.warmupSets.at(-1), entry.warmupSets.length - 1, true));
       updateCounter();
       e.target.blur();
     } }, '+ Warm-up set');
@@ -662,7 +724,7 @@ function exerciseBlock(entry, db, ctx) {
   }
 
   const grid = el('div', { class: 'set-grid' });
-  entry.sets.forEach((set, i) => grid.append(setRow(entry, set, i, db, ctx, updateCounter)));
+  entry.sets.forEach((set, i) => grid.append(rowFor(grid, entry.sets, set, i, false)));
   body.append(el('h3', { style: { margin: '12px 0 6px' } }, 'Work sets'), grid);
 
   body.append(
@@ -671,7 +733,7 @@ function exerciseBlock(entry, db, ctx) {
         const last = entry.sets.at(-1);
         entry.sets.push({ weight: last?.weight ?? 0, reps: last?.reps ?? entry.prescribedReps, done: false, ts: null });
         store.save();
-        grid.append(setRow(entry, entry.sets.at(-1), entry.sets.length - 1, db, ctx, updateCounter));
+        grid.append(rowFor(grid, entry.sets, entry.sets.at(-1), entry.sets.length - 1, false));
         updateCounter();
         e.target.blur();
       } }, '+ Set'),
@@ -693,28 +755,34 @@ function exerciseBlock(entry, db, ctx) {
     );
   }
 
-  const block = el('div', { class: 'ex-block' },
-    el('div', { class: 'ex-head' },
-      el('div', { class: 'grow' },
-        el('span', { class: 'ex-name' }, ex?.name || entry.exerciseId),
-        entry.light && el('span', { class: 'pill info', style: { marginLeft: '7px' } }, 'Light'),
-        entry.carriedFrom && el('span', { class: 'pill', style: { marginLeft: '7px' } }, 'carried')
-      ),
-      el('div', { class: 'row', style: { gap: '8px' } },
-        counter,
-        el('button', {
-          class: 'btn-sm btn-ghost', 'aria-label': `Remove ${ex?.name || entry.exerciseId}`,
-          onclick: () => {
-            store.update((d) => {
-              d.activeSession.entries = d.activeSession.entries.filter((x) => x.id !== entry.id);
-            });
-            ctx.refresh();
-          },
-        }, '✕'))
+  // Ticked sets are logged work — a swipe must not be able to discard them
+  // without saying so. An untouched exercise goes without a question.
+  const removeExercise = async () => {
+    const ticked = (entry.sets || []).some((x) => x.done)
+      || (entry.warmupSets || []).some((x) => x.done);
+    if (ticked && !(await confirmSheet('Remove exercise?',
+      `${ex?.name || entry.exerciseId} has ticked sets. Removing it discards them from this session.`, 'Remove'))) return;
+    store.update((d) => {
+      d.activeSession.entries = d.activeSession.entries.filter((x) => x.id !== entry.id);
+    });
+    ctx.refresh();
+  };
+
+  const head = el('div', { class: 'ex-head' },
+    el('div', { class: 'grow' },
+      el('span', { class: 'ex-name' }, ex?.name || entry.exerciseId),
+      entry.light && el('span', { class: 'pill info', style: { marginLeft: '7px' } }, 'Light'),
+      entry.carriedFrom && el('span', { class: 'pill', style: { marginLeft: '7px' } }, 'carried')
     ),
-    body
+    el('div', { class: 'row', style: { gap: '8px' } },
+      counter,
+      el('button', {
+        class: 'btn-sm btn-ghost', 'aria-label': `Remove ${ex?.name || entry.exerciseId}`,
+        onclick: removeExercise,
+      }, '✕'))
   );
-  return block;
+
+  return el('div', { class: 'ex-block' }, swipeable(head, removeExercise), body);
 }
 
 /**
@@ -773,12 +841,20 @@ function conditioningBlock(entry, db, ctx) {
   const startRestBtn = el('button', { class: 'btn-sm btn-block', onclick: () => openRoundSettings(ctx) },
     'Timer settings');
 
+  const removeBlock = async () => {
+    if (entry.done && !(await confirmSheet('Remove conditioning?',
+      `${c?.name || entry.exerciseId} is already logged in this session.`, 'Remove'))) return;
+    store.update((d) => {
+      d.activeSession.entries = d.activeSession.entries.filter((x) => x.id !== entry.id);
+    });
+    ctx.refresh();
+  };
   return el('div', { class: 'ex-block' },
-    el('div', { class: 'ex-head' },
+    swipeable(el('div', { class: 'ex-head' },
       el('div', { class: 'grow' },
         el('span', { class: 'ex-name' }, c?.name || entry.exerciseId),
         el('span', { class: 'pill info', style: { marginLeft: '7px' } }, 'conditioning')),
-      counter),
+      counter), removeBlock),
     el('div', { class: 'ex-body' },
       c?.detail && el('div', { class: 'note', style: { marginTop: 0 } }, c.detail),
       el('div', { class: 'btn-row', style: { marginBottom: '12px' } }, startRound, startRestBtn),
