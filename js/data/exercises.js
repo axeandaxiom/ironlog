@@ -314,6 +314,36 @@ export const CONDITIONING = [
 
   // ---- bike ----
   {
+    id: 'jj-class', sport: 'jiu-jitsu', name: 'Class (gi or no-gi)',
+    structure: 'technique + drilling + rolling', durationMin: 75, zone: 'Z2–Z4', rpe: '6',
+    interference: 'medium',
+    detail: 'A normal academy class. Log the techniques covered and the rounds you rolled — the library keeps count from what you log here.',
+  },
+  {
+    id: 'jj-drilling', sport: 'jiu-jitsu', name: 'Drilling / Technique Only',
+    structure: 'reps of chosen techniques', durationMin: 45, zone: 'Z1–Z2', rpe: '4',
+    interference: 'low',
+    detail: 'Repetition without resistance. The cheapest volume in grappling — this is where the library grows fastest.',
+  },
+  {
+    id: 'jj-positional', sport: 'jiu-jitsu', name: 'Positional Sparring',
+    structure: '6 × 5 min from set positions', durationMin: 30, zone: 'Z3–Z4', rpe: '7',
+    interference: 'medium',
+    detail: 'Start from the position you are working, reset on escape or submission. More learning per minute than free rolling.',
+  },
+  {
+    id: 'jj-rolling', sport: 'jiu-jitsu', name: 'Rolling',
+    structure: '5–8 × 5 min rounds', durationMin: 35, zone: 'Z4', rpe: '8',
+    interference: 'high',
+    detail: 'Free sparring. Count submissions both ways honestly — the ones you concede are the curriculum.',
+  },
+  {
+    id: 'jj-openmat', sport: 'jiu-jitsu', name: 'Open Mat',
+    structure: 'unstructured', durationMin: 60, zone: 'varies', rpe: '7',
+    interference: 'high',
+    detail: 'Whatever happened, log it: rounds, submissions, and anything you drilled.',
+  },
+  {
     id: 'bike-z2', sport: 'bike', name: 'Zone 2 Steady',
     structure: '45–90 min continuous', durationMin: 60, zone: 'Z2', rpe: '3–4',
     interference: 'low',
@@ -409,7 +439,7 @@ export const CONDITIONING = [
   },
 ];
 
-export const SPORTS = ['boxing', 'bike', 'running', 'sled', 'rowing'];
+export const SPORTS = ['boxing', 'jiu-jitsu', 'bike', 'running', 'sled', 'rowing'];
 
 export const INTERFERENCE_NOTE = {
   none: 'No meaningful cost to the strength programme.',

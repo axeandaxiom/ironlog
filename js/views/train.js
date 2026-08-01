@@ -9,10 +9,12 @@
 import { el, $, uid, todayISO, num, fmtClock, buzz, toast, platesFor, e1rm, toDisplayWeight, fromDisplayWeight, numInput, parseNum } from '../util.js';
 import * as store from '../store.js';
 import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, INTERFERENCE_NOTE, findExercise, exerciseName, EQUIPMENT, SPORTS } from '../data/exercises.js';
+import { JJ_TECHNIQUES } from '../data/jiujitsu.js';
 import { PROGRAMS, nextWorkout, applySession, phaseAdvice, seedWeight, warmupSets, carryForward,
          lastLogged, offeredWeight, programLifts, staleWeights, adoptLogged,
          rotationDays, setRotationDay } from '../programs.js';
 import { startRest, stopRest, sheet, confirmSheet } from '../app.js';
+import { openJJLibrary } from './jiujitsu.js';
 import { openProgramManager, openExerciseManager, openProgramBuilder } from './build.js';
 import { openRoundTimer, openRoundSettings } from './rounds.js';
 import { openAttachments, hasAttachments } from './attach.js';
@@ -186,7 +188,8 @@ function renderPlan(view, ctx, db) {
     el('h2', {}, 'Off-programme'),
     el('div', { class: 'btn-row' },
       el('button', { onclick: () => startFreeSession(ctx, db) }, 'Free session'),
-      el('button', { onclick: () => openConditioning(ctx, db) }, 'Conditioning')
+      el('button', { onclick: () => openConditioning(ctx, db) }, 'Conditioning'),
+      el('button', { onclick: () => openJJLibrary(ctx) }, 'Jiu-jitsu')
     ),
     el('button', { class: 'btn-block', style: { marginTop: '8px' },
       onclick: () => openBackdate(ctx, db) }, 'Log a past session'),
@@ -1064,6 +1067,44 @@ function logConditioning(ctx, db, c, intoSession, close) {
     const rpe = numInput({ decimal: false, value: String(parseInt(c.rpe, 10) || 6) });
     const notes = el('textarea', { placeholder: 'Rounds completed, pace, how it went' });
 
+    // Jiu-jitsu carries what every grappling tracker converged on: gi or
+    // no-gi, rounds rolled, submissions both ways, techniques tagged from
+    // the library. The library's drill counts come from exactly these tags.
+    const jj = c.sport === 'jiu-jitsu' ? {
+      gi: true, techniques: [],
+      rounds: numInput({ decimal: false, value: '', placeholder: '0' }),
+      subsFor: numInput({ decimal: false, value: '', placeholder: '0' }),
+      subsAgainst: numInput({ decimal: false, value: '', placeholder: '0' }),
+    } : null;
+    let jjBlock = null;
+    if (jj) {
+      const giBtn = el('button', { class: 'chip', 'aria-pressed': 'true' }, 'Gi');
+      const nogiBtn = el('button', { class: 'chip', 'aria-pressed': 'false' }, 'No-gi');
+      const setGi = (v) => { jj.gi = v;
+        giBtn.setAttribute('aria-pressed', String(v));
+        nogiBtn.setAttribute('aria-pressed', String(!v)); };
+      giBtn.addEventListener('click', () => setGi(true));
+      nogiBtn.addEventListener('click', () => setGi(false));
+
+      const tagged = el('div', { class: 'li-sub', style: { marginTop: '4px' } }, 'None tagged yet.');
+      const tagBtn = el('button', { class: 'btn-block', onclick: () => {
+        openJJLibrary(ctx, { selected: jj.techniques, pick: (ids) => {
+          jj.techniques = ids;
+          tagged.textContent = ids.length
+            ? ids.map((id) => JJ_TECHNIQUES.find((t) => t.id === id)?.name || id).join(', ')
+            : 'None tagged yet.';
+        } });
+      } }, 'Tag techniques from the library');
+
+      jjBlock = el('div', {},
+        el('div', { class: 'chips', style: { margin: '8px 0' } }, giBtn, nogiBtn),
+        el('div', { class: 'grid3' },
+          el('div', {}, el('label', {}, 'Rounds'), jj.rounds),
+          el('div', {}, el('label', {}, 'Subs landed'), jj.subsFor),
+          el('div', {}, el('label', {}, 'Subs conceded'), jj.subsAgainst)),
+        tagBtn, tagged);
+    }
+
     // Anything structured as rounds gets the round timer, parsed straight off
     // the session's own structure string.
     const m = c.structure.match(/(\d+)\s*[×x]\s*(\d+)\s*(min|s)\b/i);
@@ -1083,6 +1124,7 @@ function logConditioning(ctx, db, c, intoSession, close) {
       el('div', { class: 'grid2' },
         el('div', { class: 'field' }, el('label', {}, 'Minutes'), dur),
         el('div', { class: 'field' }, el('label', {}, 'RPE 1–10'), rpe)),
+      jjBlock,
       el('div', { class: 'field' }, el('label', {}, 'Notes'), notes),
       el('div', { class: 'note warn' }, INTERFERENCE_NOTE[c.interference]),
       el('button', { class: 'btn-primary btn-block', onclick: () => {
@@ -1093,6 +1135,13 @@ function logConditioning(ctx, db, c, intoSession, close) {
           rpe: Math.round(parseNum(rpe)) || null,
           interference: c.interference,
           notes: notes.value, entries: [],
+          ...(jj ? {
+            gi: jj.gi,
+            rounds: Math.round(parseNum(jj.rounds)) || 0,
+            subsFor: Math.round(parseNum(jj.subsFor)) || 0,
+            subsAgainst: Math.round(parseNum(jj.subsAgainst)) || 0,
+            techniques: jj.techniques,
+          } : {}),
         };
         store.update((d) => {
           if (intoSession && d.activeSession) {

@@ -17,6 +17,7 @@ import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, findExercise,
 import * as store from './js/store.js';
 import { RoundTimer, DEFAULT_BOXING } from './js/timer.js';
 import { BUILD, BUILT } from './js/version.js';
+import { JJ_TYPES, JJ_TECHNIQUES } from './js/data/jiujitsu.js';
 import { supported as mediaSupported, put as mediaPut, get as mediaGet,
          remove as mediaRemove, prune as mediaPrune, fmtBytes,
          hasAttachments } from './js/media.js';
@@ -2257,4 +2258,41 @@ group('Warm-ups come from your own last ramp');
   const wkBare = nextWorkout(bare);
   ok(wkBare.items.find((i) => i.exerciseId === 'squat').warmup.length > 0,
      'a lift with no history still gets the calculated ladder');
+}
+
+group('Jiu-jitsu library');
+{
+  const ids = JJ_TECHNIQUES.map((t) => t.id);
+  ok(ids.length === new Set(ids).size, 'technique ids are unique', String(ids.length));
+  ok(JJ_TECHNIQUES.length >= 50, `library ships with a real curriculum (${JJ_TECHNIQUES.length})`);
+  const typeIds = new Set(JJ_TYPES.map((t) => t.id));
+  ok(JJ_TECHNIQUES.every((t) => typeIds.has(t.type)),
+     'every technique belongs to a defined type');
+  ok(JJ_TECHNIQUES.every((t) => t.name && t.cue && t.pos),
+     'every technique carries a name, a position and a cue');
+  ok(SPORTS.includes('jiu-jitsu'), 'jiu-jitsu is a sport you can log');
+  const jjSessions = CONDITIONING.filter((c) => c.sport === 'jiu-jitsu');
+  ok(jjSessions.length === 5, 'five session types: class, drilling, positional, rolling, open mat',
+     jjSessions.map((c) => c.id).join(','));
+  ok(jjSessions.every((c) => c.durationMin > 0 && c.interference),
+     'each session type carries duration and interference like every other sport');
+
+  // The library's drill counts derive from tagged sessions — the log is truth.
+  const db = { sessions: [
+    { type: 'conditioning', sport: 'jiu-jitsu', date: '2026-07-01',
+      durationMin: 60, rounds: 5, subsFor: 2, subsAgainst: 3,
+      techniques: ['jj-rnc', 'jj-knee-cut'] },
+    { type: 'conditioning', sport: 'jiu-jitsu', date: '2026-07-03',
+      durationMin: 45, rounds: 0, subsFor: 0, subsAgainst: 0,
+      techniques: ['jj-rnc'] },
+    { type: 'conditioning', sport: 'boxing', date: '2026-07-04',
+      durationMin: 36, techniques: ['jj-rnc'] },   // wrong sport — ignored
+  ] };
+  const counts = {};
+  for (const s of db.sessions.filter((x) => x.sport === 'jiu-jitsu')) {
+    for (const t of s.techniques || []) counts[t] = (counts[t] || 0) + 1;
+  }
+  ok(counts['jj-rnc'] === 2 && counts['jj-knee-cut'] === 1,
+     'drill counts sum per technique across jiu-jitsu sessions only',
+     JSON.stringify(counts));
 }

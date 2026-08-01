@@ -80,7 +80,9 @@ export function renderLog(view, ctx) {
         el('div', { class: 'li-title' }, s.label),
         el('div', { class: 'li-sub' },
           s.type === 'conditioning'
-            ? `${s.durationMin} min · ${s.sport} · RPE ${s.rpe ?? '–'}`
+            ? `${s.durationMin} min · ${s.sport}${s.sport === 'jiu-jitsu' ? (s.gi === false ? ' (no-gi)' : ' (gi)') : ''} · RPE ${s.rpe ?? '–'}`
+              + (s.rounds ? ` · ${s.rounds} rounds` : '')
+              + (s.subsFor || s.subsAgainst ? ` · subs ${s.subsFor || 0}/${s.subsAgainst || 0}` : '')
             : `${sets} sets${s.durationSec ? ` · ${fmtClock(s.durationSec)}` : ''}`)),
       el('div', { class: 'li-right' }, s.date)));
   }

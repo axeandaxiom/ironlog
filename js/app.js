@@ -223,6 +223,10 @@ syncCustom();
 
 $$('.nav-btn').forEach((b) => b.addEventListener('click', () => go(b.dataset.route)));
 
+// The brand mark is the home button — tapping the IronLog logo from anywhere
+// returns to the Train screen, the app's front door.
+$('.brand')?.addEventListener('click', () => go('train'));
+
 window.addEventListener('hashchange', () => {
   const r = location.hash.replace(/^#\/?/, '') || 'train';
   if (r !== current) go(r, { silent: true });
