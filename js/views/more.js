@@ -5,6 +5,7 @@ import * as store from '../store.js';
 import { PROGRAMS, programLifts, incrementFor, explainOffer, isLoadable } from '../programs.js';
 import { MAIN_LIFTS } from '../data/exercises.js';
 import { support } from '../sensors.js';
+import { openSoundCheck } from './soundcheck.js';
 import { sheet, confirmSheet, checkForUpdate, applyUpdate } from '../app.js';
 import { BUILD, BUILT } from '../version.js';
 import * as media from '../media.js';
@@ -15,6 +16,16 @@ export function renderMore(view, ctx) {
   const s = db.settings;
 
   view.append(el('h1', {}, 'More'));
+
+  // ---- sound ----
+  // Near the top on purpose: a silent timer is the failure that ruins a
+  // session, and this is the screen that says why.
+  view.append(el('h2', {}, 'Sound'));
+  view.append(el('div', { class: 'card tight' },
+    el('p', { class: 'sub', style: { marginTop: 0 } },
+      'Bells, the rest beep, and video attached to a set all share one audio path. '
+      + 'If any of them is silent, run this — it measures whether sound is leaving the app.'),
+    el('button', { class: 'btn-block', onclick: () => openSoundCheck() }, 'Sound check')));
 
   // ---- data ----
   view.append(el('h2', {}, 'Data'));
