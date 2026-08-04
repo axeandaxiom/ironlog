@@ -278,12 +278,31 @@ let keepAlive = null;
 // 'mix' lets other apps keep playing and ducks them for the bell; 'exclusive'
 // beats the ringer switch but takes the audio session away from them. Changing
 // it rebuilds the context, because the category is fixed at construction.
-let audioMode = 'mix';
+// 'exclusive' is the default and the safe one. The audio session type is set
+// on the PAGE, not on our AudioContext, so choosing 'mix' ('transient') put
+// every sound the app can make — bells, rest beeps, and the audio track of a
+// video you attached to a set — into a category the iOS ringer switch mutes.
+// Silence everywhere is a far worse failure than a podcast pausing.
+let audioMode = 'exclusive';
+
+/** Apply the category to the page. Safe to call before any context exists. */
+function applyAudioSession() {
+  try {
+    if (navigator.audioSession) {
+      navigator.audioSession.type = audioMode === 'mix' ? 'transient' : 'playback';
+    }
+  } catch { /* not supported; the ringer switch will win */ }
+}
+
+// Set at load, so video attached to a set has a sane category even if no
+// timer has ever been started in this session.
+applyAudioSession();
 
 export function setAudioMode(mode) {
-  const next = mode === 'exclusive' ? 'exclusive' : 'mix';
+  const next = mode === 'mix' ? 'mix' : 'exclusive';
   if (next === audioMode) return;
   audioMode = next;
+  applyAudioSession();
   try { keepAlive?.stop(); } catch { /* already stopped */ }
   keepAlive = null;
   const old = ctx;
@@ -300,15 +319,11 @@ export async function primeAudio() {
     // context in the one it was born with.
     //
     // The two categories are a genuine either/or on iOS and you have to pick:
-    //   'transient' ducks other apps — a podcast keeps playing and the bell
-    //               cuts over the top of it — but the ringer switch can mute it.
     //   'playback'  ignores the ringer switch but takes the session
-    //               exclusively, which is what stops the podcast dead.
-    try {
-      if (navigator.audioSession) {
-        navigator.audioSession.type = audioMode === 'exclusive' ? 'playback' : 'transient';
-      }
-    } catch { /* not supported; the ringer switch will win */ }
+    //               exclusively, which is what stops a podcast dead. Default.
+    //   'transient' ducks other apps instead of stopping them — but the
+    //               ringer switch mutes it, and it mutes video audio too.
+    applyAudioSession();
     ctx ||= new (window.AudioContext || window.webkitAudioContext)();
     if (ctx.state === 'suspended') await ctx.resume();
     // A phone call, a podcast starting, or Siri suspends the context out from

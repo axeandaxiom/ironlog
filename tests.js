@@ -12,10 +12,10 @@ import { plan, bmr, calibrate, scaleFood, dayTotals, FOODS } from './js/nutritio
 import { RECIPES, computeMacros } from './js/data/recipes.js';
 import { analyseJump, analyseSway } from './js/sensors.js';
 import { BUILTIN_TESTS, asymmetry, personalBest } from './js/movement.js';
-import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, findExercise,
+import { MAIN_LIFTS, ASSISTANCE, CONDITIONING, SPORTS, findExercise,
          registerCustomExercises, normaliseCustom, allMovements } from './js/data/exercises.js';
 import * as store from './js/store.js';
-import { RoundTimer, DEFAULT_BOXING } from './js/timer.js';
+import { RoundTimer, DEFAULT_BOXING, setAudioMode, getAudioMode } from './js/timer.js';
 import { BUILD, BUILT } from './js/version.js';
 import { JJ_TYPES, JJ_TECHNIQUES } from './js/data/jiujitsu.js';
 import { supported as mediaSupported, put as mediaPut, get as mediaGet,
@@ -1801,7 +1801,10 @@ if (window.__mediaTest) {
     const el2 = document.getElementById('summary');
     el2.textContent = `${pass} passed, ${fail} failed`;
     el2.className = fail ? 'fail' : 'pass';
-    window.__results = { pass, fail };
+    // Preserve the completion flag: this promise settles after the synchronous
+    // groups, so overwriting it blind would erase the one signal that says the
+    // file was evaluated all the way to the end.
+    window.__results = { pass, fail, complete: window.__suiteComplete === true };
   }).catch((e) => {
     group('Set attachments — storage round trip');
     ok(false, 'IndexedDB round trip', String(e));
@@ -2295,4 +2298,60 @@ group('Jiu-jitsu library');
   ok(counts['jj-rnc'] === 2 && counts['jj-knee-cut'] === 1,
      'drill counts sum per technique across jiu-jitsu sessions only',
      JSON.stringify(counts));
+}
+
+group('Audio session category — the one that silenced everything');
+{
+  // v17 defaulted the page audio session to 'transient' so a podcast could
+  // keep playing. But navigator.audioSession.type applies to the WHOLE PAGE,
+  // and iOS mutes 'transient' with the ringer switch — so the bell, the rest
+  // beep and the audio track of a video attached to a set all went silent
+  // together. 'playback' is the default again; mixing stays opt-in.
+  const KEY = 'ironlog.db';
+  const backup = localStorage.getItem(KEY);
+  try {
+    store.wipe();
+    ok(getAudioMode() === 'exclusive', 'the module default is the audible one',
+       getAudioMode());
+
+    // A stored 'mix' from the broken builds must not survive an upgrade.
+    const base = JSON.parse(JSON.stringify(store.get()));
+    base.settings.boxing = { ...DEFAULT_BOXING, audioMode: 'mix' };
+    store.importJSON(JSON.stringify(base), { mode: 'replace' });
+    ok(store.get().settings.boxing.audioMode === 'exclusive',
+       'a stored "mix" is migrated back to audible on load',
+       store.get().settings.boxing.audioMode);
+
+    // But it remains a real choice you can make deliberately.
+    setAudioMode('mix');
+    ok(getAudioMode() === 'mix', 'mixing can still be chosen on purpose');
+    setAudioMode('exclusive');
+    ok(getAudioMode() === 'exclusive', 'and switched back');
+
+    // Unknown or absent values must land on the safe one, never on silence.
+    setAudioMode(undefined);
+    ok(getAudioMode() === 'exclusive', 'an absent mode defaults to audible');
+    setAudioMode('nonsense');
+    ok(getAudioMode() === 'exclusive', 'an unknown mode defaults to audible');
+  } finally {
+    if (backup !== null) localStorage.setItem(KEY, backup);
+    else localStorage.removeItem(KEY);
+  }
+}
+
+// ---------------------------------------------------------------- completion
+// A ReferenceError anywhere above aborts module evaluation, and every group
+// after it silently vanishes — the page still showed "418 passed, 0 failed"
+// while a third of the file never ran. The summary now only counts as valid
+// if execution actually reached this line.
+group('Suite completed');
+ok(true, 'every group above was reached — the summary is complete');
+{
+  const el3 = document.getElementById('summary');
+  if (el3) {
+    el3.textContent = `${pass} passed, ${fail} failed`;
+    el3.className = fail ? 'fail' : 'pass';
+  }
+  window.__suiteComplete = true;
+  window.__results = { pass, fail, complete: true };
 }

@@ -93,6 +93,14 @@ function migrate(data) {
   // The 0.75 kg fractional plates arrived in v20. A stored plate list predates
   // them, so grant them once — but only to the untouched default set. A list
   // the user has edited is their inventory, not ours to add to.
+  // v17-v28 defaulted the audio session to 'mix', which the iOS ringer switch
+  // mutes — and because the category is page-wide it silenced video audio too.
+  // Anyone carrying that stored value gets moved back to the working default;
+  // it can still be chosen deliberately in Timer settings.
+  if (merged.settings.boxing?.audioMode === 'mix') {
+    merged.settings.boxing = { ...merged.settings.boxing, audioMode: 'exclusive' };
+  }
+
   const OLD_DEFAULT = [25, 20, 15, 10, 5, 2.5, 1.25];
   if (Array.isArray(merged.settings.plates)
       && merged.settings.plates.length === OLD_DEFAULT.length

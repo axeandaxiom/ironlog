@@ -191,15 +191,18 @@ export function openRoundSettings(ctx, after) {
       const wrap = el('div', { class: 'field' });
       const chips = el('div', { class: 'btn-row' });
       const opts = [
+        ['exclusive', 'Always audible'],
         ['mix', 'Play over other apps'],
-        ['exclusive', 'Take over the sound'],
       ];
       const say = () => {
         audioHelp.textContent = audioMode === 'mix'
-          ? 'A podcast or music keeps playing and ducks under the bell. The ringer '
-            + 'switch on the side of the phone can mute the bell in this mode.'
-          : 'The bell ignores the ringer switch, but iOS hands the sound to one app '
-            + 'at a time, so whatever else is playing will stop.';
+          ? 'A podcast keeps playing and ducks under the bell — but iOS applies this '
+            + 'setting to the whole app, so the ringer switch can then mute the bell, '
+            + 'the rest beep, and the sound of any video attached to a set. Use it only '
+            + 'if you keep the ringer on.'
+          : 'Recommended. Bells, the rest beep and video sound all play regardless of '
+            + 'the ringer switch. iOS gives the audio to one app at a time, so a podcast '
+            + 'will pause.';
       };
       const btns = opts.map(([v, label]) => {
         const b = el('button', { class: 'chip', 'aria-pressed': String(audioMode === v) }, label);
