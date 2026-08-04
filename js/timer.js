@@ -278,22 +278,35 @@ let keepAlive = null;
 // 'mix' lets other apps keep playing and ducks them for the bell; 'exclusive'
 // beats the ringer switch but takes the audio session away from them. Changing
 // it rebuilds the context, because the category is fixed at construction.
-// 'mix' is the default: the app should play OVER a podcast, not replace it.
-// 'transient' ducks other audio for the length of a bell and hands it straight
-// back. The cost is that the iOS ringer switch can mute it — so if the app
-// goes silent, the switch is the first thing to check, and the Sound check
-// screen says so outright.
+// The three iOS audio session categories that matter, stored by their real
+// names now rather than behind an invented 'mix'/'exclusive' pair that hid
+// which one was actually being asked for:
 //
-// 'exclusive' ('playback') ignores the ringer switch but seizes the session,
-// which stops whatever else is playing dead. It is the fallback, not the norm.
-let audioMode = 'mix';
+//   'ambient'    mixes with other audio — a podcast keeps playing at full
+//                volume and the bell sounds over the top. Silenced by the
+//                ringer switch. This is what "play over other apps" means.
+//   'transient'  interrupts other audio for the length of the sound. Despite
+//                the name it is not a mixing category — I had this wrong, and
+//                it is why the bell went quiet under a podcast.
+//   'playback'   primary audio: ignores the ringer switch, and stops whatever
+//                else is playing.
+//
+// Which of these actually behaves as documented varies by iOS version, so the
+// Sound check screen plays one tone per category and lets you pick by ear.
+const AUDIO_MODES = ['ambient', 'transient', 'playback'];
+let audioMode = 'ambient';
+
+/** Accepts the old 'mix'/'exclusive' names so a stored setting still resolves. */
+function normaliseMode(mode) {
+  if (mode === 'mix') return 'ambient';
+  if (mode === 'exclusive') return 'playback';
+  return AUDIO_MODES.includes(mode) ? mode : 'ambient';
+}
 
 /** Apply the category to the page. Safe to call before any context exists. */
 function applyAudioSession() {
   try {
-    if (navigator.audioSession) {
-      navigator.audioSession.type = audioMode === 'mix' ? 'transient' : 'playback';
-    }
+    if (navigator.audioSession) navigator.audioSession.type = audioMode;
   } catch { /* not supported; the ringer switch will win */ }
 }
 
@@ -305,9 +318,8 @@ function applyAudioSession() {
 
 export function setAudioMode(mode) {
   // Anything unrecognised — including the undefined a user who never opened
-  // the setting has — must land on mixing. Falling through to 'exclusive'
-  // would silently seize the audio session for everyone by default.
-  const next = mode === 'exclusive' ? 'exclusive' : 'mix';
+  // the setting has — must land on mixing, never on seizing the session.
+  const next = normaliseMode(mode);
   if (next === audioMode) return;
   audioMode = next;
   applyAudioSession();
@@ -319,6 +331,7 @@ export function setAudioMode(mode) {
 }
 
 export function getAudioMode() { return audioMode; }
+export { AUDIO_MODES };
 
 export async function primeAudio() {
   try {

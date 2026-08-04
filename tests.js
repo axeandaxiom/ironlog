@@ -2315,21 +2315,27 @@ group('Audio session category');
   const backup = localStorage.getItem(KEY);
   try {
     store.wipe();
-    ok(getAudioMode() === 'mix',
-       'the default plays over other apps rather than seizing the audio',
+    ok(getAudioMode() === 'ambient',
+       'the default is the category that genuinely mixes with other audio',
        getAudioMode());
 
-    // A stored choice is honoured in both directions.
-    setAudioMode('exclusive');
-    ok(getAudioMode() === 'exclusive', 'taking over the sound can be chosen');
+    // All three real categories are selectable.
+    for (const m of ['playback', 'transient', 'ambient']) {
+      setAudioMode(m);
+      ok(getAudioMode() === m, `${m} can be chosen`, getAudioMode());
+    }
+
+    // The old invented names still resolve, so a stored setting is not lost.
     setAudioMode('mix');
-    ok(getAudioMode() === 'mix', 'and mixing chosen back');
+    ok(getAudioMode() === 'ambient', 'a stored "mix" maps to ambient');
+    setAudioMode('exclusive');
+    ok(getAudioMode() === 'playback', 'a stored "exclusive" maps to playback');
 
     // Anything unrecognised falls to mixing, never to seizing the session.
     setAudioMode(undefined);
-    ok(getAudioMode() === 'mix', 'an absent mode mixes');
+    ok(getAudioMode() === 'ambient', 'an absent mode mixes');
     setAudioMode('nonsense');
-    ok(getAudioMode() === 'mix', 'an unknown mode mixes');
+    ok(getAudioMode() === 'ambient', 'an unknown mode mixes');
   } finally {
     if (backup !== null) localStorage.setItem(KEY, backup);
     else localStorage.removeItem(KEY);
@@ -2363,8 +2369,8 @@ group('Opening the app must not seize the audio session');
      'the module does not claim the audio session at load');
   ok(/stopAudio[\s\S]*audioSession\.type = 'auto'/.test(src),
      'and stopAudio hands the session back so a podcast un-ducks');
-  ok(/let audioMode = 'mix'/.test(src),
-     'the shipped default mixes rather than seizing');
+  ok(/let audioMode = 'ambient'/.test(src),
+     'the shipped default is the mixing category, not an interrupting one');
 }
 
 group('The round timer keeps its place across a settings trip');

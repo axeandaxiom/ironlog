@@ -207,23 +207,28 @@ export function openRoundSettings(ctx, after) {
       return fld;
     };
 
-    let audioMode = cfg.audioMode === 'exclusive' ? 'exclusive' : 'mix';
+    let audioMode = ({ mix: 'ambient', exclusive: 'playback' })[cfg.audioMode]
+      || (['ambient', 'transient', 'playback'].includes(cfg.audioMode) ? cfg.audioMode : 'ambient');
     const audioHelp = el('div', { class: 'li-sub' });
     const audioModeField = () => {
       const wrap = el('div', { class: 'field' });
       const chips = el('div', { class: 'btn-row' });
       const opts = [
-        ['mix', 'Play over other apps'],
-        ['exclusive', 'Take over the sound'],
+        ['ambient', 'Play over other apps'],
+        ['transient', 'Interrupt briefly'],
+        ['playback', 'Take over the sound'],
       ];
       const say = () => {
-        audioHelp.textContent = audioMode === 'mix'
-          ? 'Recommended. A podcast or music keeps playing and ducks for the length of '
-            + 'a bell. The app claims the audio only while it is making a sound. The one '
-            + 'cost: the ringer switch on the side of the phone can mute it.'
-          : 'Bells ignore the ringer switch, but iOS then hands the audio to one app at '
-            + 'a time — whatever else is playing will stop. Use this only if the ringer '
-            + 'switch keeps muting you.';
+        audioHelp.textContent = {
+          ambient: 'A podcast keeps playing at full volume and the bell sounds over it. '
+            + 'The ringer switch can mute this mode.',
+          transient: 'The bell interrupts other audio for as long as it lasts, then hands '
+            + 'it back. Some iOS versions go silent under a podcast in this mode.',
+          playback: 'The bell ignores the ringer switch, but iOS gives the audio to one '
+            + 'app at a time — a podcast will stop.',
+        }[audioMode] || '';
+        audioHelp.textContent += ' Which of these behaves as described varies by iOS '
+          + 'version — More → Sound check plays one of each so you can pick by ear.';
       };
       const btns = opts.map(([v, label]) => {
         const b = el('button', { class: 'chip', 'aria-pressed': String(audioMode === v) }, label);
