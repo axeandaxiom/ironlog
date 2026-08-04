@@ -278,12 +278,15 @@ let keepAlive = null;
 // 'mix' lets other apps keep playing and ducks them for the bell; 'exclusive'
 // beats the ringer switch but takes the audio session away from them. Changing
 // it rebuilds the context, because the category is fixed at construction.
-// 'exclusive' is the default and the safe one. The audio session type is set
-// on the PAGE, not on our AudioContext, so choosing 'mix' ('transient') put
-// every sound the app can make — bells, rest beeps, and the audio track of a
-// video you attached to a set — into a category the iOS ringer switch mutes.
-// Silence everywhere is a far worse failure than a podcast pausing.
-let audioMode = 'exclusive';
+// 'mix' is the default: the app should play OVER a podcast, not replace it.
+// 'transient' ducks other audio for the length of a bell and hands it straight
+// back. The cost is that the iOS ringer switch can mute it — so if the app
+// goes silent, the switch is the first thing to check, and the Sound check
+// screen says so outright.
+//
+// 'exclusive' ('playback') ignores the ringer switch but seizes the session,
+// which stops whatever else is playing dead. It is the fallback, not the norm.
+let audioMode = 'mix';
 
 /** Apply the category to the page. Safe to call before any context exists. */
 function applyAudioSession() {
@@ -294,12 +297,17 @@ function applyAudioSession() {
   } catch { /* not supported; the ringer switch will win */ }
 }
 
-// Set at load, so video attached to a set has a sane category even if no
-// timer has ever been started in this session.
-applyAudioSession();
+// Deliberately NOT called at load. Setting the category activates the audio
+// session, and a training app that kills your podcast the instant you open it
+// is worse than one that is quiet until you ask it for a sound. The category
+// is claimed on the first tap that actually needs to make a noise, and
+// released again by stopAudio.
 
 export function setAudioMode(mode) {
-  const next = mode === 'mix' ? 'mix' : 'exclusive';
+  // Anything unrecognised — including the undefined a user who never opened
+  // the setting has — must land on mixing. Falling through to 'exclusive'
+  // would silently seize the audio session for everyone by default.
+  const next = mode === 'exclusive' ? 'exclusive' : 'mix';
   if (next === audioMode) return;
   audioMode = next;
   applyAudioSession();
@@ -363,6 +371,12 @@ function startKeepAlive() {
 export function stopAudio() {
   try { keepAlive?.stop(); } catch { /* already stopped */ }
   keepAlive = null;
+  // Hand the audio session back. Without this the silent keep-alive buffer
+  // keeps the category active and a podcast stays ducked long after the last
+  // bell — the app would be quietly sitting on the phone's audio all day.
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = 'auto';
+  } catch { /* unsupported */ }
 }
 
 /** What the UI needs to tell you honestly whether you will hear anything. */

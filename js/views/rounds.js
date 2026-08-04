@@ -18,7 +18,7 @@ export function boxingConfig(db, overrides = {}) {
  * `onDone(result)` receives { roundsCompleted, workMinutes } so a conditioning
  * block can fill itself in from what you actually did.
  */
-export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) {
+export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone, resume = null } = {}) {
   const db = store.get();
   const cfg = boxingConfig(db, {
     ...(rounds ? { rounds } : {}),
@@ -28,6 +28,18 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
 
   const timer = new RoundTimer(cfg);
   let lastTickSec = null;
+
+  // Coming back from the settings sheet must not cost you your place. Round 9
+  // of 12 has to still be round 9 — rebuilding the timer from scratch there
+  // was throwing away the session you were in the middle of.
+  if (resume) {
+    timer.phase = resume.phase;
+    // Shortening the rotation while standing in round 9 of 12 would otherwise
+    // leave the counter past the end.
+    timer.round = Math.min(resume.round, cfg.rounds);
+    timer.elapsedInPhase = Math.min(resume.elapsedInPhase, timer.phaseLength);
+    timer._emitTick();
+  }
 
   sheet('Round timer', (body, close) => {
     const clock = el('div', { class: 'round-clock' }, '0:00');
@@ -112,7 +124,17 @@ export function openRoundTimer(ctx, { rounds, roundSec, restSec, onDone } = {}) 
       el('button', { onclick: () => { timer.stop(); timer.reset(); lastTickSec = null; } }, 'Reset'),
       // Reopened without the programme's rounds/length/rest overrides: you have
       // just set those by hand, and a prescription must not overwrite a choice.
-      el('button', { onclick: () => { close(); openRoundSettings(ctx, () => openRoundTimer(ctx, { onDone })); } }, 'Settings'));
+      el('button', { onclick: () => {
+        // Snapshot before closing: close() stops the timer, and a stopped
+        // timer's elapsed reading is the one we want to come back to.
+        timer.pause();
+        const snap = {
+          phase: timer.phase, round: timer.round,
+          elapsedInPhase: timer.elapsedInPhase, running: false,
+        };
+        close();
+        openRoundSettings(ctx, () => openRoundTimer(ctx, { onDone, resume: snap }));
+      } }, 'Settings'));
 
     body.append(
       el('div', { class: 'round-wrap' },
@@ -191,18 +213,17 @@ export function openRoundSettings(ctx, after) {
       const wrap = el('div', { class: 'field' });
       const chips = el('div', { class: 'btn-row' });
       const opts = [
-        ['exclusive', 'Always audible'],
         ['mix', 'Play over other apps'],
+        ['exclusive', 'Take over the sound'],
       ];
       const say = () => {
         audioHelp.textContent = audioMode === 'mix'
-          ? 'A podcast keeps playing and ducks under the bell — but iOS applies this '
-            + 'setting to the whole app, so the ringer switch can then mute the bell, '
-            + 'the rest beep, and the sound of any video attached to a set. Use it only '
-            + 'if you keep the ringer on.'
-          : 'Recommended. Bells, the rest beep and video sound all play regardless of '
-            + 'the ringer switch. iOS gives the audio to one app at a time, so a podcast '
-            + 'will pause.';
+          ? 'Recommended. A podcast or music keeps playing and ducks for the length of '
+            + 'a bell. The app claims the audio only while it is making a sound. The one '
+            + 'cost: the ringer switch on the side of the phone can mute it.'
+          : 'Bells ignore the ringer switch, but iOS then hands the audio to one app at '
+            + 'a time — whatever else is playing will stop. Use this only if the ringer '
+            + 'switch keeps muting you.';
       };
       const btns = opts.map(([v, label]) => {
         const b = el('button', { class: 'chip', 'aria-pressed': String(audioMode === v) }, label);

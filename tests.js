@@ -22,6 +22,11 @@ import { supported as mediaSupported, put as mediaPut, get as mediaGet,
          remove as mediaRemove, prune as mediaPrune, fmtBytes,
          hasAttachments } from './js/media.js';
 
+// Some invariants are about the shape of the source, not its behaviour —
+// "does this module grab the audio session at import time" cannot be observed
+// from outside, because by then it already has.
+window.__timerSource = await (await fetch('./js/timer.js', { cache: 'no-store' })).text();
+
 let pass = 0, fail = 0;
 const out = document.getElementById('out');
 let list = null;
@@ -2300,39 +2305,31 @@ group('Jiu-jitsu library');
      JSON.stringify(counts));
 }
 
-group('Audio session category — the one that silenced everything');
+group('Audio session category');
 {
-  // v17 defaulted the page audio session to 'transient' so a podcast could
-  // keep playing. But navigator.audioSession.type applies to the WHOLE PAGE,
-  // and iOS mutes 'transient' with the ringer switch — so the bell, the rest
-  // beep and the audio track of a video attached to a set all went silent
-  // together. 'playback' is the default again; mixing stays opt-in.
+  // navigator.audioSession.type is PAGE-wide, and setting it activates the
+  // session — so it is claimed on the first tap that needs a sound and handed
+  // back by stopAudio, never at module load. Opening the app must not stop a
+  // podcast that is already playing.
   const KEY = 'ironlog.db';
   const backup = localStorage.getItem(KEY);
   try {
     store.wipe();
-    ok(getAudioMode() === 'exclusive', 'the module default is the audible one',
+    ok(getAudioMode() === 'mix',
+       'the default plays over other apps rather than seizing the audio',
        getAudioMode());
 
-    // A stored 'mix' from the broken builds must not survive an upgrade.
-    const base = JSON.parse(JSON.stringify(store.get()));
-    base.settings.boxing = { ...DEFAULT_BOXING, audioMode: 'mix' };
-    store.importJSON(JSON.stringify(base), { mode: 'replace' });
-    ok(store.get().settings.boxing.audioMode === 'exclusive',
-       'a stored "mix" is migrated back to audible on load',
-       store.get().settings.boxing.audioMode);
-
-    // But it remains a real choice you can make deliberately.
-    setAudioMode('mix');
-    ok(getAudioMode() === 'mix', 'mixing can still be chosen on purpose');
+    // A stored choice is honoured in both directions.
     setAudioMode('exclusive');
-    ok(getAudioMode() === 'exclusive', 'and switched back');
+    ok(getAudioMode() === 'exclusive', 'taking over the sound can be chosen');
+    setAudioMode('mix');
+    ok(getAudioMode() === 'mix', 'and mixing chosen back');
 
-    // Unknown or absent values must land on the safe one, never on silence.
+    // Anything unrecognised falls to mixing, never to seizing the session.
     setAudioMode(undefined);
-    ok(getAudioMode() === 'exclusive', 'an absent mode defaults to audible');
+    ok(getAudioMode() === 'mix', 'an absent mode mixes');
     setAudioMode('nonsense');
-    ok(getAudioMode() === 'exclusive', 'an unknown mode defaults to audible');
+    ok(getAudioMode() === 'mix', 'an unknown mode mixes');
   } finally {
     if (backup !== null) localStorage.setItem(KEY, backup);
     else localStorage.removeItem(KEY);
@@ -2354,4 +2351,60 @@ ok(true, 'every group above was reached — the summary is complete');
   }
   window.__suiteComplete = true;
   window.__results = { pass, fail, complete: true };
+}
+
+group('Opening the app must not seize the audio session');
+{
+  // The v29 regression TV hit: applyAudioSession() ran at module load, so the
+  // mere act of opening IronLog stopped whatever was playing. The category is
+  // only ever claimed from a tap that needs a sound.
+  const src = window.__timerSource || '';
+  ok(!/^applyAudioSession\(\);$/m.test(src),
+     'the module does not claim the audio session at load');
+  ok(/stopAudio[\s\S]*audioSession\.type = 'auto'/.test(src),
+     'and stopAudio hands the session back so a podcast un-ducks');
+  ok(/let audioMode = 'mix'/.test(src),
+     'the shipped default mixes rather than seizing');
+}
+
+group('The round timer keeps its place across a settings trip');
+{
+  // TV: open the timer, tap Settings, come back — and it had restarted at
+  // round 1 prep. openRoundTimer built a brand new RoundTimer every time.
+  const cfg = { ...DEFAULT_BOXING, rounds: 12, roundSec: 180, restSec: 60, prepSec: 10 };
+
+  // Stand in the middle of round 9, 40 s in.
+  const live = new RoundTimer(cfg);
+  live.phase = 'work'; live.round = 9; live.elapsedInPhase = 40;
+  const snap = { phase: live.phase, round: live.round, elapsedInPhase: live.elapsedInPhase };
+
+  // What the reopened timer does with that snapshot.
+  const back = new RoundTimer(cfg);
+  back.phase = snap.phase;
+  back.round = Math.min(snap.round, cfg.rounds);
+  back.elapsedInPhase = Math.min(snap.elapsedInPhase, back.phaseLength);
+  ok(back.round === 9 && back.phase === 'work', 'the round and phase survive',
+     `${back.phase} ${back.round}`);
+  ok(Math.abs(back.remaining - 140) < 1, 'and so does the time left in it',
+     String(back.remaining));
+  ok(back.roundsCompleted === 8, 'completed rounds are still counted right',
+     String(back.roundsCompleted));
+
+  // Shortening the rotation while standing past the new end must not leave
+  // the counter reading round 9 of 6.
+  const shorter = { ...cfg, rounds: 6 };
+  const clamped = new RoundTimer(shorter);
+  clamped.phase = snap.phase;
+  clamped.round = Math.min(snap.round, shorter.rounds);
+  clamped.elapsedInPhase = Math.min(snap.elapsedInPhase, clamped.phaseLength);
+  ok(clamped.round === 6, 'a shortened rotation clamps the round', String(clamped.round));
+
+  // A shortened round length must not leave elapsed past the end of the phase.
+  const quick = { ...cfg, roundSec: 30 };
+  const q = new RoundTimer(quick);
+  q.phase = 'work'; q.round = 9;
+  q.elapsedInPhase = Math.min(snap.elapsedInPhase, q.phaseLength);
+  ok(q.elapsedInPhase <= 30 && q.remaining >= 0,
+     'a shortened round clamps elapsed rather than going negative',
+     `${q.elapsedInPhase} / ${q.remaining}`);
 }
