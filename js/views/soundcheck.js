@@ -14,7 +14,7 @@
 
 import { el, toast } from '../util.js';
 import { BUILD } from '../version.js';
-import { audioState, getAudioMode, setAudioMode, primeAudio, AUDIO_MODES } from '../timer.js';
+import { audioState, getAudioMode, setAudioMode, primeAudio, stopAudio, AUDIO_MODES } from '../timer.js';
 import { sheet } from '../app.js';
 import * as store from '../store.js';
 
@@ -22,6 +22,8 @@ import * as store from '../store.js';
 async function measureTone(sessionType) {
   const out = { sessionType, peak: 0, ok: false, error: '' };
   try {
+    // No sessionType means "use whatever is already set" — taking a reading
+    // must not change the app's audio behaviour as a side effect.
     try {
       if (navigator.audioSession && sessionType) navigator.audioSession.type = sessionType;
     } catch { /* unsupported */ }
@@ -88,6 +90,13 @@ export function openSoundCheck() {
 
     const modeChips = () => {
       const row = el('div', { class: 'chips' });
+      const none = el('button', { class: 'chip' }, 'Neither — I heard nothing');
+      none.addEventListener('click', () => {
+        modeOut.textContent = 'Then this iOS version will not mix web audio under '
+          + 'another app at all. The real choice is "Take over the sound" — the bell '
+          + 'is audible and the podcast pauses for it — or no bell while a podcast '
+          + 'plays. Nothing in the app can change that.';
+      });
       const btns = AUDIO_MODES.map((m) => {
         const b = el('button', { class: 'chip', 'aria-pressed': String(getAudioMode() === m) },
           LABEL[m]);
@@ -102,7 +111,7 @@ export function openSoundCheck() {
         });
         return b;
       });
-      row.append(...btns);
+      row.append(...btns, none);
       return row;
     };
 
@@ -116,7 +125,8 @@ export function openSoundCheck() {
       el('div', { class: 'note' },
         el('b', {}, 'This makes a noise on purpose. '),
         'Turn the volume up first. It plays one tone per audio mode and measures whether '
-        + 'the sound actually leaves the app, so we can tell a broken app from a muted phone.'),
+        + 'the sound actually leaves the app, so we can tell a broken app from a muted phone. '
+        + 'It uses the mode you already have set, so it will not interrupt anything.'),
       el('button', { class: 'btn-primary btn-block', onclick: async (e) => {
         e.target.disabled = true;
         report.textContent = 'Running…';
@@ -134,12 +144,12 @@ export function openSoundCheck() {
         const a1 = audioState();
         lines.push(`after priming  ${a1.state}`, '');
 
-        for (const type of ['playback', 'transient', 'ambient', null]) {
-          const r = await measureTone(type);
-          lines.push(
-            `${(type || 'default').padEnd(14)} peak ${r.peak.toFixed(3)}  `
-            + `${r.ok ? 'SIGNAL' : 'silent'}${r.error ? `  (${r.error})` : ''}`);
-        }
+        // Measured in the mode you are actually running. Cycling through every
+        // category here would stop a podcast just to take a reading.
+        const r = await measureTone(null);
+        lines.push(`tone           peak ${r.peak.toFixed(3)}  `
+          + `${r.ok ? 'SIGNAL' : 'silent'}${r.error ? `  (${r.error})` : ''}`);
+        stopAudio();
         lines.push('',
           'If any line says SIGNAL but you heard nothing, the app is making',
           'sound and the phone is swallowing it — ringer switch, volume, or',
@@ -160,15 +170,23 @@ export function openSoundCheck() {
         + 'you heard while the podcast kept playing.'),
       el('button', { class: 'btn-block', onclick: async (e) => {
         e.target.disabled = true;
-        for (const mode of AUDIO_MODES) {
+        // Only the candidates that might mix. 'playback' is documented to stop
+        // other audio and does — testing it would kill the podcast and leave
+        // every mode after it being judged against silence.
+        const previous = getAudioMode();
+        for (const mode of ['ambient', 'transient']) {
           modeOut.textContent = `Now playing: ${LABEL[mode]}…`;
           setAudioMode(mode);
           await primeAudio();
-          // A distinct pitch per mode, so you can tell them apart by ear.
           bellFor(mode);
           await new Promise((r) => setTimeout(r, 3000));
         }
-        modeOut.textContent = 'Done — pick the one you heard.';
+        // Hand the session back and restore what was set, so running the test
+        // never silently changes the app's behaviour.
+        stopAudio();
+        setAudioMode(previous);
+        modeOut.textContent = 'Done. Tap whichever you heard over the podcast — '
+          + 'or "Neither" if the podcast drowned both out.';
         e.target.disabled = false;
       } }, 'Play a sound in each mode'),
       modeOut,
